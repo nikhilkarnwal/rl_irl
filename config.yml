@@ -1,0 +1,147 @@
+# Tuned
+# CartPole-v1:
+#   n_envs: 8
+#   n_timesteps: !!float 1e5
+#   policy: 'MlpPolicy'
+#   n_steps: 32
+#   batch_size: 256
+#   gae_lambda: 0.8
+#   gamma: 0.98
+#   n_epochs: 20
+#   ent_coef: 0.0
+#   learning_rate: 0.001
+#   clip_range: 0.2
+#   verbose: 1
+
+# for gail
+CartPole-v1:
+  n_envs: 8
+  n_timesteps: !!float 1e5
+  policy: 'MlpPolicy'
+  n_steps: 256
+  batch_size: 256
+  gae_lambda: 0.8
+  gamma: 0.98
+  n_epochs: 20
+  ent_coef: 0.0
+  learning_rate: 0.001
+  clip_range: 0.2
+  verbose: 1
+
+Gail1:
+  demo_batch_size:  10000
+  gen_train_timesteps: 10000
+  lr: !!float 1e-3
+  ts: !!float 1e6
+  round: 2
+
+# increase per step and no of round to keep same number of disc update
+Gail2:
+  demo_batch_size: 10000
+  gen_train_timesteps: 10000
+  lr: !!float 1e-3
+  ts: !!float 1e6
+  round: 4
+
+
+# increase per step
+Gail3:
+  demo_batch_size: 20000
+  gen_train_timesteps: 20000
+  lr: !!float 1e-3
+  ts: !!float 1e6
+  round: 2
+
+# decrease learning rate
+Gail4:
+  demo_batch_size:  10000
+  gen_train_timesteps: 10000
+  lr: !!float 5e-4
+  ts: !!float 1e6
+  round: 2
+
+Gail5:
+  demo_batch_size: 10000
+  gen_train_timesteps: 10000
+  lr: !!float 1e-3
+  ts: !!float 1.5e6
+  round: 4
+
+Gail6:
+  demo_batch_size: 10000
+  gen_train_timesteps: 10000
+  lr: !!float 1e-3
+  ts: !!float 2e6
+  round: 2
+
+Gail7:
+  demo_batch_size: 10000
+  gen_train_timesteps: 10000
+  lr: !!float 1e-5
+  ts: !!float 2e6
+  round: 2
+
+Gail8:
+  demo_batch_size: 256
+  gen_train_timesteps: 10000
+  lr: !!float 1e-3
+  ts: !!float 2e6
+  round: 2
+
+Gail9:
+  demo_batch_size: 256
+  gen_train_timesteps: 256
+  lr: !!float 1e-3
+  ts: !!float 2e6
+  round: 2
+
+Gail10:
+  demo_batch_size: 1024
+  gen_train_timesteps: 1024
+  lr: !!float 1e-3
+  ts: !!float 2e6
+  round: 2
+
+# SAC
+# Hopper-v3:
+#   n_envs: 1
+#   n_timesteps: !!float 1e6
+#   buffer_size: 1000000
+#   learning_rate: 0.001
+#   learning_starts: 500
+#   batch_size: 100
+#   gamma: 0.95
+#   verbose: 1
+#   seed: 101
+#   policy: 'MlpPolicy'
+#   train_freq: 1
+#   gradient_steps: 10
+
+
+Hopper-v3:
+  n_envs: 1
+  n_timesteps: !!float 1e3
+  learning_starts: 10000
+  policy: 'MlpPolicy'
+  verbose: 1
+
+HalfCheetah-v3:
+  n_envs: 1
+  n_timesteps: !!float 3e3
+  learning_starts: 10000
+  policy: 'MlpPolicy'
+  verbose: 1
+
+Walker2d-v3:
+  n_envs: 1
+  n_timesteps: !!float 3e6
+  learning_starts: 10000
+  policy: 'MlpPolicy'
+  verbose: 1
+
+door-expert-v1:
+  n_envs: 1
+  n_timesteps: !!float 1e6
+  learning_starts: 10000
+  policy: 'MlpPolicy'
+  verbose: 1
