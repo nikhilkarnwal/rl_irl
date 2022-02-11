@@ -28,3 +28,20 @@ Hopper-v3:
   verbose: 1
   seed: 101
   policy: 'MlpPolicy'
+
+
+
+Gail10:
+  demo_batch_size: 1024
+  gen_train_timesteps: 1024
+  lr: !!float 1e-3
+  ts: !!float 2e6
+  round: 2
+  wd: !!float 0
+
+door-expert-v1:
+  n_envs: 1
+  n_timesteps: !!float 1e6
+  policy: 'MlpPolicy'
+  verbose: 1
+  batch_size: 256

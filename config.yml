@@ -80,6 +80,7 @@ Gail7:
   lr: !!float 1e-5
   ts: !!float 2e6
   round: 2
+  wd: !!float 0
 
 Gail8:
   demo_batch_size: 256
@@ -101,6 +102,48 @@ Gail10:
   lr: !!float 1e-3
   ts: !!float 2e6
   round: 2
+  wd: !!float 0
+
+Gail11:
+  demo_batch_size: 64
+  gen_train_timesteps: 256
+  lr: !!float 3e-4
+  ts: !!float 2e6
+  round: 2
+  wd: !!float 10
+
+Gail12:
+  demo_batch_size: 64
+  gen_train_timesteps: 256
+  lr: !!float 3e-4
+  ts: !!float 2e6
+  round: 2
+  wd: !!float 0
+
+
+Gail13:
+  demo_batch_size: 10000
+  gen_train_timesteps: 10000
+  lr: !!float 1e-3
+  ts: !!float 2e6
+  round: 10
+  wd: !!float 0
+
+Gail14:
+  demo_batch_size: 10000
+  gen_train_timesteps: 10000
+  lr: !!float 1e-3
+  ts: !!float 2e6
+  round: 25
+  wd: !!float 0
+
+GailTest:
+  demo_batch_size: 64
+  gen_train_timesteps: 256
+  lr: !!float 3e-4
+  ts: !!float 256
+  round: 50
+  wd: !!float 0
 
 # SAC
 # Hopper-v3:
@@ -145,3 +188,6 @@ door-expert-v1:
   learning_starts: 10000
   policy: 'MlpPolicy'
   verbose: 1
+  tau: !!float 0.01
+  buffer_size: 3000000
+  batch_size: 256

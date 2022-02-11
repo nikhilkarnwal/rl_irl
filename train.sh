@@ -62,13 +62,32 @@ c_t=$(date "+%d_%m_%Y_%H_%M_%S")
 # --env=door-expert-v1 --config_file=config.yml \
 # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail7 --explore > "$c_t-adroit.txt"
 
-c_t=$(date "+%d_%m_%Y_%H_%M_%S")
-python train_rl.py --gen=sac \
---env=door-expert-v1 --config_file=config.yml \
---trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail9 --explore > "$c_t-adroit.txt"
-
-
 # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
 # python train_rl.py --gen=sac \
 # --env=door-expert-v1 --config_file=config.yml \
-# --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail9 --explore > "$c_t-adroit.txt"
+# --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail10 --explore > "$c_t-adroit.txt"
+
+
+c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+python train_rl.py --gen=sac \
+--env=door-expert-v1 --config_file=config.yml \
+--trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail14 --explore> "$c_t-adroit.txt"
+
+c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+python train_rl.py --gen=sac \
+--env=door-expert-v1 --config_file=config.yml \
+--trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail6 --explore> "$c_t-adroit.txt"
+
+# c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+# python train_rl.py --gen=ppo \
+# --env=door-expert-v1 --config_file=ppo_config.yml \
+# --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail10 --explore > "$c_t-adroit.txt"
+
+# c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+# python train_rl.py --gen=sac --env=door-expert-v1 --config_file=config.yml \
+# --save_video --num_trajs=1000 --gen_trajs --explore> "$c_t-adroit.txt"
+
+
+# c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+# python train_rl.py --gen=ppo --env=door-expert-v1 --config_file=ppo_config.yml \
+# --save_video --num_trajs=1000 --gen_trajs > "$c_t-adroit.txt"

@@ -42,12 +42,93 @@ class ContinuousHead(nn.Module):
         mean = F.tanh(actions)
         mean_noise = mean.clone()._normal(0,std=self.noise_std)
         actions = (mean+mean_noise).clamp(-1,1)*self.scale_prior + self.mean_prior
-        return actions
+        return actions, Normal.log_prob(actions)
+
+def build_mlp(arch,act):
+    model = []
+    model.append(nn.Linear(arch['in'],arch['hid']))
+    if act != None:
+        model.append(act())
+    for i in range(arch['hid_l']):
+        model.append(nn.Linear(arch['hid'],arch['hid']))
+        if act!= None:
+            model.append(act())
+    model.append(nn.Linear(arch['hid'],arch['out']))
+    return nn.Sequential(*model)
 
 
-class PolicyNetwork(nn.Module):
+class Network(nn.Module):
     def __init__(self, in_dim,out_dim,hid_dim, hid_l) -> None:
         super().__init__()
-        self.model = nn.Sequential(
-            
-        )
+        self.model = build_mlp(arch={
+            'in':in_dim,
+            'out':out_dim,
+            'hid':hid_dim,
+            'hid_l':hid_l
+        }, act=nn.Tanh)
+
+    def forward(self,obs):
+        action = self.model(obs)
+        return action
+
+class ContinuousPolicy(nn.Module):
+
+    def __init__(self, obs_shape, action_shape, action_space) -> None:
+        super().__init__()
+        self.policy = Network(obs_shape, action_shape, 64,3)
+        self.value = Network(obs_shape,1,64,3)
+        policy_head_cfg = {}
+        if action_space.is_bounded():
+            low = action_space.low
+            high = action_space.high
+            scale_prior = (high - low) / 2
+            bias_prior = (low + high) / 2
+            policy_head_cfg['scale_prior'] = scale_prior
+            policy_head_cfg['mean_prior'] = bias_prior
+        self.head = ContinuousHead(**policy_head_cfg, noise_std=0.2)
+        self.value_optim = torch.optim.Adam(self.value.parameters)
+        self.policy_optim = torch.optim.Adam({'params':self.policy.parameters(),'params':self.head.parameters()})
+
+    def forward(self, obs):
+        acts = self.policy(obs)
+        values = self.value(obs)
+        acts, prob = self.head(acts)
+
+        return (acts, prob), values
+
+    def update(self, obs,next_obs, rew, acts):
+        logs ={}
+        # train value function
+        with torch.no_grad():
+            expected_v = rew + self.value(next_obs)
+        self.value.train()
+        actual_v = self.value(obs)
+        self.value_optim.zero_grad()
+        v_loss  = F.mse_loss(expected_v, actual_v)
+        logs['v_loss'] = v_loss.item()
+        v_loss.backward()
+        self.value_optim.step()
+
+
+        # train policy
+        with torch.no_grad():
+            adv = rew + self.value(next_obs) - self.value(obs)
+
+        self.policy.train()
+        self.head.train()
+        self.policy_optim.zero_grad()
+
+        actual_acts, log_prob = self.head(self.policy(obs))
+
+        act_loss = torch.mean(log_prob*adv)
+        logs['act_loss'] = act_loss.item()
+        act_loss.backward()
+        self.policy_optim.step()
+
+        return logs
+
+
+
+
+
+

@@ -3,6 +3,8 @@
 import argparse
 from distutils.log import info
 import os
+from tabnanny import verbose
+from typing import Tuple
 import numpy as np
 import gym
 from imitation.data.types import TrajectoryWithRew, save, load
@@ -14,7 +16,8 @@ from datetime import datetime
 import pathlib
 import pickle
 import tempfile
-
+from sympy import arg
+from torch import nn
 import stable_baselines3 as sb3
 
 from imitation.algorithms import bc
@@ -27,7 +30,9 @@ import yaml
 from utils import ReplayBufferFHAS, TrajReplayABS, ReplayBufferAS, IRLASWrapper
 import d4rl
 from imitation.data import types
+from imitation.rewards import reward_nets
 gen_algo_cfg = {}
+import torch as th
 
 irl_cfg = {}
 
@@ -46,6 +51,17 @@ def build_env(name,args):
         nenv = env
         venv = util.make_vec_env(name, n_envs=1)
     return venv, nenv, env
+
+class AAdam(th.optim.Adam):
+    def __init__(self, params, lr: float = ..., betas: Tuple[float, float] = ..., eps: float = ..., weight_decay: float = ..., amsgrad: bool = ...) -> None:
+        super().__init__(params, lr, betas, eps, weight_decay, amsgrad)
+
+    def update_lr(self,i):
+        pass
+
+from torch.nn.utils import spectral_norm
+
+        
 
 def run_gail(name, transitions, args, work_dir):
     # # Load pickled test demonstrations.
@@ -96,14 +112,23 @@ def run_gail(name, transitions, args, work_dir):
     action_noise = None
     n_actions = env.action_space.shape[-1]
     if args.explore:
-        action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.1 * np.ones(n_actions))
+        action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.2 * np.ones(n_actions))
+
+    policy_args = None
+    if args.reward:
+        policy_args = {
+                "activation_fn":nn.Tanh,
+                "net_arch":[512,512]
+            }
 
     if args.gen == 'ppo':
         gen_algo = PPO(env=venv,tensorboard_log=work_dir, **gen_algo_cfg)
     else:
         gen_algo = sb3.SAC(
             env=venv,tensorboard_log=work_dir, **gen_algo_cfg, 
-            replay_buffer_class=replay_bf_cls, replay_buffer_kwargs=replay_buffer_kwargs, action_noise=action_noise, ent_coef="auto_5")
+            replay_buffer_class=replay_bf_cls, replay_buffer_kwargs=replay_buffer_kwargs,
+            action_noise=action_noise, ent_coef="auto_5", 
+            policy_kwargs=policy_args)
     # gen_algo.learn(100000)
     # gen_algo.collect_rollouts()
     # gail_trainer = airl.AIRL(
@@ -117,9 +142,37 @@ def run_gail(name, transitions, args, work_dir):
     #     allow_variable_horizon=True,gen_train_timesteps = irl_cfg['gen_train_timesteps'],
     #     disc_opt_kwargs={'lr': irl_cfg['lr']},
     # )
+    reward_net = reward_nets.BasicRewardNet(
+                observation_space=venv.observation_space,
+                action_space=venv.action_space,
+                **{"hid_sizes": (256,256)}
+            )
+    for key in reward_net.mlp._modules.keys():
+        if isinstance(reward_net.mlp._modules[key],nn.Linear):
+            reward_net.mlp._modules[key] = spectral_norm(reward_net.mlp._modules[key])
+    if not args.reward:
+        reward_net = None
+    # reward_net = None
+    # gail_trainer = airl.AIRL(
+    #     venv=venv,
+    #     demonstrations=None,
+    #     reward_net=reward_net,
+    #     demo_batch_size=irl_cfg['demo_batch_size'],
+    #     gen_algo=gen_algo,
+    #     custom_logger=gail_logger, n_disc_updates_per_round=irl_cfg['round'],
+    #     normalize_reward=False, normalize_obs=False,
+    #     init_tensorboard_graph=True,
+    #     allow_variable_horizon=True,gen_train_timesteps = irl_cfg['gen_train_timesteps'],
+    #     disc_opt_kwargs={
+    #         'lr': irl_cfg['lr'],
+    #         # 'betas':(0.95, 0.999),}
+    #         'weight_decay':irl_cfg['wd'],},
+    # )
+
     gail_trainer = gail.GAIL(
         venv=venv,
         demonstrations=None,
+        reward_net=reward_net,
         demo_batch_size=irl_cfg['demo_batch_size'],
         gen_algo=gen_algo,
         custom_logger=gail_logger, n_disc_updates_per_round=irl_cfg['round'],
@@ -128,9 +181,12 @@ def run_gail(name, transitions, args, work_dir):
         allow_variable_horizon=True,gen_train_timesteps = irl_cfg['gen_train_timesteps'],
         disc_opt_kwargs={
             'lr': irl_cfg['lr'],
-            'betas':(0.95, 0.999),}
-            # 'weight_decay':10,},
+            # 'betas':(0.95, 0.999),}
+            'weight_decay':irl_cfg['wd'],},
     )
+
+    scheduler = th.optim.lr_scheduler.ExponentialLR(gail_trainer._disc_opt, gamma=0.95, verbose=True)
+    # scheduler = None
     gail_trainer.set_demonstrations(transitions)
     callbks = []
     callbks.append(EvalCallback(
@@ -142,7 +198,10 @@ def run_gail(name, transitions, args, work_dir):
         ))
     gail_trainer.gen_callback = [*callbks,gail_trainer.gen_callback]
     gail_trainer.allow_variable_horizon = True
-    gail_trainer.train(total_timesteps=int(irl_cfg['ts']))
+    if args.sh:
+        gail_trainer.train(total_timesteps=int(irl_cfg['ts']), callback=scheduler.step)
+    else:
+        gail_trainer.train(total_timesteps=int(irl_cfg['ts']))
 
     # Train AIRL on expert data.
     # airl_logger = logger.configure(tempdir_path / "AIRL/")
@@ -211,11 +270,16 @@ def run_gen(name,args , work_dir="temp"):
             log_path=work_dir,
             eval_freq=5000
         ))
+    action_noise = None
+    n_actions = env.action_space.shape[-1]
+    if args.explore:
+        action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.2 * np.ones(n_actions))
+
     if args.gen == 'ppo':
         model = PPO(env=env,tensorboard_log=work_dir, **gen_algo_cfg)
         gen_algo = PPO
     else:
-        model = sb3.SAC(env=env,tensorboard_log=work_dir, **gen_algo_cfg)
+        model = sb3.SAC(env=env,tensorboard_log=work_dir, action_noise=action_noise, ent_coef=2, **gen_algo_cfg)
         gen_algo = sb3.SAC
     
     if args.resume_model != None:
@@ -388,6 +452,8 @@ def main():
     parser.add_argument('--save_video', action='store_true', default=False)
 
     parser.add_argument('--explore', action='store_true', default=False)
+    parser.add_argument('--reward', action='store_true', default=False)
+    parser.add_argument('--sh', action='store_true', default=False)
 
     parser.add_argument('--test_model', action='store_true', default=False)
     parser.add_argument('--abs', action='store_true', default=False)
