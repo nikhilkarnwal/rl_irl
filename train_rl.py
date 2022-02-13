@@ -1,6 +1,7 @@
 """Trains BC, GAIL and AIRL models on saved CartPole-v1 demonstrations."""
 
 import argparse
+from distutils.command.config import config
 from distutils.log import info
 import os
 from tabnanny import verbose
@@ -16,9 +17,10 @@ from datetime import datetime
 import pathlib
 import pickle
 import tempfile
-from sympy import arg
 from torch import nn
 import stable_baselines3 as sb3
+from wandb import wandb
+from wandb.integration.sb3 import WandbCallback
 
 from imitation.algorithms import bc
 from imitation.algorithms.adversarial import airl, gail
@@ -28,7 +30,7 @@ from stable_baselines3.common.noise import NormalActionNoise
 import stable_baselines3.common.utils as s3utils
 import yaml
 from utils import ReplayBufferFHAS, TrajReplayABS, ReplayBufferAS, IRLASWrapper
-import d4rl
+# import d4rl
 from imitation.data import types
 from imitation.rewards import reward_nets
 gen_algo_cfg = {}
@@ -37,6 +39,8 @@ import torch as th
 irl_cfg = {}
 
 cfg = {}
+
+os.environ["WANDB_API_KEY"]="90852721fdf4fb388c7f75ad45a5a0629bfc4bbf"
 
 def build_env(name,args):
     env = gym.make(name)
@@ -196,13 +200,12 @@ def run_gail(name, transitions, args, work_dir):
             log_path=work_dir,
             eval_freq=20000
         ))
-    gail_trainer.gen_callback = [*callbks,gail_trainer.gen_callback]
+    gail_trainer.gen_callback = [*callbks,gail_trainer.gen_callback, WandbCallback(verbose=1,gradient_save_freq=10000)]
     gail_trainer.allow_variable_horizon = True
     if args.sh:
         gail_trainer.train(total_timesteps=int(irl_cfg['ts']), callback=scheduler.step)
     else:
         gail_trainer.train(total_timesteps=int(irl_cfg['ts']))
-
     # Train AIRL on expert data.
     # airl_logger = logger.configure(tempdir_path / "AIRL/")
     # airl_trainer = airl.AIRL(
@@ -474,6 +477,14 @@ def main():
         params = load_params(args)
     # name = "CartPole-v1"
     work_dir = f"/media/biswas/D/rl_irl/test_env/{name}/{dt_string}/"
+
+    run = wandb.init(
+        name=f'{name}-{dt_string}',
+        project='rl_irl',
+        config=args.__dict__,
+        sync_tensorboard=True,
+        monitor_gym=True)
+
     if not os.path.exists(work_dir):
         os.makedirs(work_dir)
         print(f"Creating dir-{work_dir}")
@@ -508,6 +519,8 @@ def main():
 
     if args.irl:
         run_gail(name, trajs, args, work_dir)
+    
+    run.finish()
 
 
 if __name__ == "__main__":
