@@ -85,7 +85,7 @@ class ContinuousPolicy(nn.Module):
             policy_head_cfg['mean_prior'] = bias_prior
         self.head = ContinuousHead(**policy_head_cfg, noise_std=0.2)
         self.value_optim = torch.optim.Adam(self.value.parameters)
-        self.policy_optim = torch.optim.Adam({'params':self.policy.parameters(),'params':self.head.parameters()})
+        self.policy_optim = torch.optim.Adam([self.policy.parameters(),self.head.parameters()])
 
     def forward(self, obs):
         acts = self.policy(obs)
