@@ -61,24 +61,26 @@ Gail4:
   round: 2
 
 Gail5:
-  demo_batch_size: 10000
-  gen_train_timesteps: 10000
+  demo_batch_size: 20000
+  gen_train_timesteps: 20000
   lr: !!float 1e-3
-  ts: !!float 1.5e6
-  round: 4
+  ts: !!float 3e6
+  round: 2
+  wd: !!float 0
 
 Gail6:
-  demo_batch_size: 10000
-  gen_train_timesteps: 10000
-  lr: !!float 1e-3
-  ts: !!float 2e6
+  demo_batch_size: 20000
+  gen_train_timesteps: 20000
+  lr: !!float 1e-4
+  ts: !!float 3e6
   round: 2
+  wd: !!float 0
 
 Gail7:
-  demo_batch_size: 10000
-  gen_train_timesteps: 10000
-  lr: !!float 1e-5
-  ts: !!float 2e6
+  demo_batch_size: 50000
+  gen_train_timesteps: 50000
+  lr: !!float 1e-3
+  ts: !!float 3e6
   round: 2
   wd: !!float 0
 
@@ -100,7 +102,7 @@ Gail10:
   demo_batch_size: 1024
   gen_train_timesteps: 1024
   lr: !!float 1e-3
-  ts: !!float 2e6
+  ts: !!float 3e6
   round: 2
   wd: !!float 0
 

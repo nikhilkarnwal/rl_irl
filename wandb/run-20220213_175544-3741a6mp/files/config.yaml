@@ -1,0 +1,286 @@
+wandb_version: 1
+
+_current_progress_remaining:
+  desc: null
+  value: 1
+_custom_logger:
+  desc: null
+  value: 'True'
+_episode_num:
+  desc: null
+  value: 0
+_episode_storage:
+  desc: null
+  value: None
+_last_episode_starts:
+  desc: null
+  value: '[ True]'
+_last_obs:
+  desc: null
+  value: "[[ 0.          0.          0.          0.          0.          0.\n   0.\
+    \          0.          0.          0.          0.          0.\n   0.         \
+    \ 0.          0.          0.          0.          0.\n   0.          0.      \
+    \    0.          0.          0.          0.\n   0.          0.          0.   \
+    \       0.          0.         -0.00692036\n  -0.19996034  0.1503871   0.00326948\
+    \  0.10107643  0.29571044 -0.01018984\n  -0.30103678 -0.14532337 -1.        ]]"
+_last_original_obs:
+  desc: null
+  value: None
+_logger:
+  desc: null
+  value: <imitation.util.logger.HierarchicalLogger object at 0x7fef386d86d0>
+_n_updates:
+  desc: null
+  value: 0
+_total_timesteps:
+  desc: null
+  value: 20000
+_vec_normalize_env:
+  desc: null
+  value: None
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.12.10
+    framework: torch
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.8.12
+    start_time: 1644803744
+    t:
+      1:
+      - 1
+      3:
+      - 13
+      - 16
+      4: 3.8.12
+      5: 0.12.10
+      8:
+      - 5
+abs:
+  desc: null
+  value: false
+action_noise:
+  desc: null
+  value: "NormalActionNoise(mu=[0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0. 0.\
+    \ 0. 0. 0. 0. 0. 0. 0.\n 0. 0. 0. 0.], sigma=[0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2\
+    \ 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2\n 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2\
+    \ 0.2])"
+action_space:
+  desc: null
+  value: "Box([-1. -1. -1. -1. -1. -1. -1. -1. -1. -1. -1. -1. -1. -1. -1. -1. -1.\
+    \ -1.\n -1. -1. -1. -1. -1. -1. -1. -1. -1. -1.], [1. 1. 1. 1. 1. 1. 1. 1. 1.\
+    \ 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1. 1.\n 1. 1. 1. 1.], (28,), float32)"
+actor:
+  desc: null
+  value: "Actor(\n  (features_extractor): FlattenExtractor(\n    (flatten): Flatten(start_dim=1,\
+    \ end_dim=-1)\n  )\n  (latent_pi): Sequential(\n    (0): Linear(in_features=39,\
+    \ out_features=256, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=256,\
+    \ out_features=256, bias=True)\n    (3): ReLU()\n  )\n  (mu): Linear(in_features=256,\
+    \ out_features=28, bias=True)\n  (log_std): Linear(in_features=256, out_features=28,\
+    \ bias=True)\n)"
+algo:
+  desc: null
+  value: SAC
+batch_size:
+  desc: null
+  value: 256
+buffer_size:
+  desc: null
+  value: 3000000
+config_file:
+  desc: null
+  value: config.yml
+critic:
+  desc: null
+  value: "ContinuousCritic(\n  (features_extractor): FlattenExtractor(\n    (flatten):\
+    \ Flatten(start_dim=1, end_dim=-1)\n  )\n  (qf0): Sequential(\n    (0): Linear(in_features=67,\
+    \ out_features=256, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=256,\
+    \ out_features=256, bias=True)\n    (3): ReLU()\n    (4): Linear(in_features=256,\
+    \ out_features=1, bias=True)\n  )\n  (qf1): Sequential(\n    (0): Linear(in_features=67,\
+    \ out_features=256, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=256,\
+    \ out_features=256, bias=True)\n    (3): ReLU()\n    (4): Linear(in_features=256,\
+    \ out_features=1, bias=True)\n  )\n)"
+critic_target:
+  desc: null
+  value: "ContinuousCritic(\n  (features_extractor): FlattenExtractor(\n    (flatten):\
+    \ Flatten(start_dim=1, end_dim=-1)\n  )\n  (qf0): Sequential(\n    (0): Linear(in_features=67,\
+    \ out_features=256, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=256,\
+    \ out_features=256, bias=True)\n    (3): ReLU()\n    (4): Linear(in_features=256,\
+    \ out_features=1, bias=True)\n  )\n  (qf1): Sequential(\n    (0): Linear(in_features=67,\
+    \ out_features=256, bias=True)\n    (1): ReLU()\n    (2): Linear(in_features=256,\
+    \ out_features=256, bias=True)\n    (3): ReLU()\n    (4): Linear(in_features=256,\
+    \ out_features=1, bias=True)\n  )\n)"
+device:
+  desc: null
+  value: cuda
+ent_coef:
+  desc: null
+  value: auto_5
+ent_coef_optimizer:
+  desc: null
+  value: "Adam (\nParameter Group 0\n    amsgrad: False\n    betas: (0.9, 0.999)\n\
+    \    eps: 1e-08\n    lr: 0.0003\n    weight_decay: 0\n)"
+env:
+  desc: null
+  value: door-expert-v1
+ep_info_buffer:
+  desc: null
+  value: deque([], maxlen=100)
+ep_success_buffer:
+  desc: null
+  value: deque([], maxlen=100)
+eval_env:
+  desc: null
+  value: None
+explore:
+  desc: null
+  value: true
+gamma:
+  desc: null
+  value: 0.99
+gen:
+  desc: null
+  value: sac
+gen_trajs:
+  desc: null
+  value: false
+gradient_steps:
+  desc: null
+  value: 1
+irl:
+  desc: null
+  value: Gail5
+irl_ts:
+  desc: null
+  value: 500000
+learning_rate:
+  desc: null
+  value: 0.0003
+learning_starts:
+  desc: null
+  value: 10000
+log_ent_coef:
+  desc: null
+  value: tensor([1.6094], device='cuda:0', requires_grad=True)
+lr_schedule:
+  desc: null
+  value: <function constant_fn.<locals>.func at 0x7fef3448b5e0>
+n_envs:
+  desc: null
+  value: 1
+num_timesteps:
+  desc: null
+  value: 0
+num_trajs:
+  desc: null
+  value: 1000
+observation_space:
+  desc: null
+  value: "Box([-inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n\
+    \ -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf\n -inf\
+    \ -inf -inf -inf -inf -inf -inf -inf -inf -inf -inf], [inf inf inf inf inf inf\
+    \ inf inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf inf inf inf inf\
+    \ inf inf inf inf inf inf inf inf inf inf inf\n inf inf inf], (39,), float32)"
+optimize_memory_usage:
+  desc: null
+  value: 'False'
+policy:
+  desc: null
+  value: "SACPolicy(\n  (actor): Actor(\n    (features_extractor): FlattenExtractor(\n\
+    \      (flatten): Flatten(start_dim=1, end_dim=-1)\n    )\n    (latent_pi): Sequential(\n\
+    \      (0): Linear(in_features=39, out_features=256, bias=True)\n      (1): ReLU()\n\
+    \      (2): Linear(in_features=256, out_features=256, bias=True)\n      (3): ReLU()\n\
+    \    )\n    (mu): Linear(in_features=256, out_features=28, bias=True)\n    (log_std):\
+    \ Linear(in_features=256, out_features=28, bias=True)\n  )\n  (critic): ContinuousCritic(\n\
+    \    (features_extractor): FlattenExtractor(\n      (flatten): Flatten(start_dim=1,\
+    \ end_dim=-1)\n    )\n    (qf0): Sequential(\n      (0): Linear(in_features=67,\
+    \ out_features=256, bias=True)\n      (1): ReLU()\n      (2): Linear(in_features=256,\
+    \ out_features=256, bias=True)\n      (3): ReLU()\n      (4): Linear(in_features=256,\
+    \ out_features=1, bias=True)\n    )\n    (qf1): Sequential(\n      (0): Linear(in_features=67,\
+    \ out_features=256, bias=True)\n      (1): ReLU()\n      (2): Linear(in_features=256,\
+    \ out_features=256, bias=True)\n      (3): ReLU()\n      (4): Linear(in_features=256,\
+    \ out_features=1, bias=True)\n    )\n  )\n  (critic_target): ContinuousCritic(\n\
+    \    (features_extractor): FlattenExtractor(\n      (flatten): Flatten(start_dim=1,\
+    \ end_dim=-1)\n    )\n    (qf0): Sequential(\n      (0): Linear(in_features=67,\
+    \ out_features=256, bias=True)\n      (1): ReLU()\n      (2): Linear(in_features=256,\
+    \ out_features=256, bias=True)\n      (3): ReLU()\n      (4): Linear(in_features=256,\
+    \ out_features=1, bias=True)\n    )\n    (qf1): Sequential(\n      (0): Linear(in_features=67,\
+    \ out_features=256, bias=True)\n      (1): ReLU()\n      (2): Linear(in_features=256,\
+    \ out_features=256, bias=True)\n      (3): ReLU()\n      (4): Linear(in_features=256,\
+    \ out_features=1, bias=True)\n    )\n  )\n)"
+policy_class:
+  desc: null
+  value: <class 'stable_baselines3.sac.policies.SACPolicy'>
+policy_kwargs:
+  desc: null
+  value: '{''use_sde'': False}'
+remove_time_limit_termination:
+  desc: null
+  value: 'False'
+replay_buffer:
+  desc: null
+  value: <stable_baselines3.common.buffers.ReplayBuffer object at 0x7fef344f14f0>
+replay_buffer_class:
+  desc: null
+  value: <class 'stable_baselines3.common.buffers.ReplayBuffer'>
+replay_buffer_kwargs:
+  desc: null
+  value: '{}'
+resume_model:
+  desc: null
+  value: null
+reward:
+  desc: null
+  value: false
+rl_ts:
+  desc: null
+  value: 500000
+save_video:
+  desc: null
+  value: false
+sde_sample_freq:
+  desc: null
+  value: -1
+seed:
+  desc: null
+  value: None
+sh:
+  desc: null
+  value: true
+start_time:
+  desc: null
+  value: 1644803758.911492
+target_entropy:
+  desc: null
+  value: '-28.0'
+target_update_interval:
+  desc: null
+  value: 1
+tau:
+  desc: null
+  value: 0.01
+tensorboard_log:
+  desc: null
+  value: /media/biswas/D/rl_irl/test_env/door-expert-v1/13_02_2022-17_55_44/
+test_model:
+  desc: null
+  value: false
+test_trajs:
+  desc: null
+  value: false
+train_freq:
+  desc: null
+  value: 'TrainFreq(frequency=1, unit=<TrainFrequencyUnit.STEP: ''step''>)'
+trajs:
+  desc: null
+  value: /media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5
+use_sde:
+  desc: null
+  value: 'False'
+use_sde_at_warmup:
+  desc: null
+  value: 'False'
+verbose:
+  desc: null
+  value: 1

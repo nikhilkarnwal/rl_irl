@@ -1,6 +1,6 @@
 import argparse
 from train_rl import build_env
-from a2c import ContinuousPolicy
+from a2c import A2CLearner
 
 parser = argparse.ArgumentParser(description='Run RL training code')
 # Configurations
@@ -15,6 +15,5 @@ print(env._max_episode_steps)
 print(env.observation_space.shape)
 print(env.action_space.shape)
 
-
-policy = ContinuousPolicy(env.observation_space.shape[0],env.action_space.shape[0],env.action_space)
-print(policy)
+model = A2CLearner(env)
+model.train(2,1000)

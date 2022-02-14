@@ -1,0 +1,32 @@
+{
+    "os": "Linux-5.4.0-99-generic-x86_64-with-glibc2.17",
+    "python": "3.8.12",
+    "heartbeatAt": "2022-02-14T01:55:45.170015",
+    "startedAt": "2022-02-14T01:55:44.472214",
+    "docker": null,
+    "gpu": "NVIDIA GeForce RTX 2080 Ti",
+    "gpu_count": 1,
+    "cpu_count": 16,
+    "cuda": null,
+    "args": [
+        "--gen=sac",
+        "--env=door-expert-v1",
+        "--config_file=config.yml",
+        "--trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5",
+        "--irl=Gail5",
+        "--sh",
+        "--explore"
+    ],
+    "state": "running",
+    "program": "train_rl.py",
+    "codePath": "train_rl.py",
+    "git": {
+        "remote": "https://github.com/nikhilkarnwal/rl_irl.git",
+        "commit": "123b684928145361b79dbb594d6bdd9e862b564b"
+    },
+    "email": "nikhilkarnwal@yahoo.com",
+    "root": "/home/biswas/nkarnwal/rl_irl",
+    "host": "biswas-Aurora-R11",
+    "username": "biswas",
+    "executable": "/home/biswas/miniconda3/envs/d4rl/bin/python"
+}

@@ -1,26 +1,29 @@
+from calendar import day_abbr
+from distutils.log import info
 from turtle import forward
+import gym
+import numpy as np
 
-from stable_baselines3 import A2C
 from stable_baselines3.common.env_util import make_vec_env
 
-# Parallel environments
-env = make_vec_env("MountainCarContinuous-v0", n_envs=1)
+# # Parallel environments
+# env = make_vec_env("MountainCarContinuous-v0", n_envs=1)
 
-# model = A2C("MlpPolicy", env, verbose=1)
-# model.learn(total_timesteps=25000)
-# model.save("a2c_cartpole")
+# # model = A2C("MlpPolicy", env, verbose=1)
+# # model.learn(total_timesteps=25000)
+# # model.save("a2c_cartpole")
 
-# del model # remove to demonstrate saving and loading
+# # del model # remove to demonstrate saving and loading
 
-# model = A2C.load("a2c_cartpole")
+# # model = A2C.load("a2c_cartpole")
 
-# obs = env.reset()
-# while True:
-#     action, _states = model.predict(obs)
-#     obs, rewards, dones, info = env.step(action)
-#     env.render()
-print(env.action_space)
-print(env.action_space.low)
+# # obs = env.reset()
+# # while True:
+# #     action, _states = model.predict(obs)
+# #     obs, rewards, dones, info = env.step(action)
+# #     env.render()
+# print(env.action_space)
+# print(env.action_space.low)
 
 
 import torch
@@ -28,6 +31,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.distributions import Categorical, Normal
+from tqdm import tqdm, trange
 
 class ContinuousHead(nn.Module):
     def __init__(self, scale_prior, mean_prior, noise_std) -> None:
@@ -38,9 +42,9 @@ class ContinuousHead(nn.Module):
 
     def forward(self, actions):
         mean = F.tanh(actions)
-        mean_noise = mean.clone()._normal(0,std=self.noise_std)
+        mean_noise = Normal(torch.zeros_like(mean),self.noise_std).sample(mean.shape)
         actions = (mean+mean_noise).clamp(-1,1)*self.scale_prior + self.mean_prior
-        return actions, Normal.log_prob(actions)
+        return actions, Normal(self.mean_prior, self.scale_prior).log_prob(actions)
 
 def build_mlp(arch,act):
     model = []
@@ -85,7 +89,7 @@ class ContinuousPolicy(nn.Module):
             policy_head_cfg['mean_prior'] = bias_prior
         self.head = ContinuousHead(**policy_head_cfg, noise_std=0.2)
         self.value_optim = torch.optim.Adam(self.value.parameters())
-        self.policy_optim = torch.optim.Adam([self.policy.parameters(),self.head.parameters()])
+        self.policy_optim = torch.optim.Adam(iter( self.policy.parameters()))
 
     def forward(self, obs):
         acts = self.policy(obs)
@@ -124,8 +128,73 @@ class ContinuousPolicy(nn.Module):
         self.policy_optim.step()
 
         return logs
+    
+    def predict(self, obs):
+        with torch.no_grad():
+            ret = self.forward(obs)
+        return ret
 
 
+from stable_baselines3.common.buffers import RolloutBuffer
+
+def collect_rollout(env: gym.Env, buff: RolloutBuffer, timesteps, policy):
+    curr_steps = 0
+    while curr_steps < timesteps:
+        obs  = env.reset()
+        ep_start = True
+        while True:
+            obs_tensor = torch.tensor(obs,dtype=torch.double, device=buff.device)
+            (action, log_prob), value = policy.predict(torch.FloatTensor(obs).to(buff.device))
+            next_obs, rew, done, info = env.step(action)
+            buff.add(obs, action, [rew], [ep_start], value,log_prob)
+            ep_start = False
+            if done:
+                break;
+            curr_steps += 1
+            obs = next_obs
+    return curr_steps
+
+
+
+
+class A2CLearner:
+    def __init__(self, env: gym.Env, rollout_buff: RolloutBuffer = None, buff_size=1000000, batch_size = 256, logger= None) -> None:
+        self.env = env
+        self.rollout_buff = rollout_buff
+        self.batch_size = batch_size
+        self.logger = logger
+        self.buff_size = buff_size
+        self.device = 'cuda'
+        self._setup_model()
+        
+    def _setup_model(self):
+        if self.rollout_buff is None:
+            self.rollout_buff = RolloutBuffer(self.buff_size, self.env.observation_space, self.env.action_space, self.device)
+
+        self.policy = ContinuousPolicy(self.env.observation_space.shape[0],self.env.action_space.shape[0],self.env.action_space).to(self.device)
+
+
+    def train(self, epochs=10, total_timesteps=1000000):
+        pbar = trange(total_timesteps)
+        pbar.set_description('Training Policy')
+        for timestep in pbar:
+            curr_ts = collect_rollout(self.env, self.rollout_buff, self.batch_size, self.policy)
+            curr_logs = {}
+            for i in range(epochs):
+                data = self.rollout_buff.sample(self.batch_size)
+
+                _logs = self.policy.update(data.observations, data.next_observations, data.rewards, data.actions)
+                for (k,v) in _logs.items():
+                    if k not in curr_logs.keys():
+                        curr_logs[k] = []
+                    curr_logs[k].append(v)
+            pbar.update(curr_ts)
+            pbar.set_postfix({k:np.mean(v) for (k,v) in curr_logs.items()})
+        print("Done!")
+            
+
+
+        
 
 
 

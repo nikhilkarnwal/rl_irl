@@ -30,7 +30,7 @@ from stable_baselines3.common.noise import NormalActionNoise
 import stable_baselines3.common.utils as s3utils
 import yaml
 from utils import ReplayBufferFHAS, TrajReplayABS, ReplayBufferAS, IRLASWrapper
-# import d4rl
+import d4rl
 from imitation.data import types
 from imitation.rewards import reward_nets
 gen_algo_cfg = {}
@@ -149,13 +149,14 @@ def run_gail(name, transitions, args, work_dir):
     reward_net = reward_nets.BasicRewardNet(
                 observation_space=venv.observation_space,
                 action_space=venv.action_space,
-                **{"hid_sizes": (256,256)}
+                # **{"hid_sizes": (256,256)}
             )
     for key in reward_net.mlp._modules.keys():
         if isinstance(reward_net.mlp._modules[key],nn.Linear):
             reward_net.mlp._modules[key] = spectral_norm(reward_net.mlp._modules[key])
-    if not args.reward:
-        reward_net = None
+    wandb.watch(reward_net)
+    # if not args.reward:
+    #     reward_net = None
     # reward_net = None
     # gail_trainer = airl.AIRL(
     #     venv=venv,

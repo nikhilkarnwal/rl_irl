@@ -71,12 +71,12 @@ c_t=$(date "+%d_%m_%Y_%H_%M_%S")
 c_t=$(date "+%d_%m_%Y_%H_%M_%S")
 python train_rl.py --gen=sac \
 --env=door-expert-v1 --config_file=config.yml \
---trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail14 --explore> "$c_t-adroit.txt"
+--trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail5 --sh --explore> "$c_t-adroit.txt"
 
 c_t=$(date "+%d_%m_%Y_%H_%M_%S")
 python train_rl.py --gen=sac \
 --env=door-expert-v1 --config_file=config.yml \
---trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail6 --explore> "$c_t-adroit.txt"
+--trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail5 --sh --explore> "$c_t-adroit.txt"
 
 # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
 # python train_rl.py --gen=ppo \
