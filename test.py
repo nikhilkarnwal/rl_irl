@@ -16,4 +16,5 @@ print(env.observation_space.shape)
 print(env.action_space.shape)
 
 model = A2CLearner(env)
-model.train(2,1000)
+model.train(2,100000)
+model.eval(100)

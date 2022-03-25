@@ -132,7 +132,7 @@ class ContinuousPolicy(nn.Module):
     def predict(self, obs):
         with torch.no_grad():
             ret = self.forward(obs)
-        return ret
+        return (ret[0].cpu().to_numpy())
 
 
 from stable_baselines3.common.buffers import RolloutBuffer
@@ -143,11 +143,8 @@ def collect_rollout(env: gym.Env, buff: RolloutBuffer, timesteps, policy):
         obs  = env.reset()
         ep_start = True
         while True:
-            obs_tensor = torch.tensor(obs,dtype=torch.double, device=buff.device).unsqueeze(0)
+            obs_tensor = torch.tensor(obs,dtype=torch.double, device=buff.device)
             (action, log_prob), value = policy.predict(torch.FloatTensor(obs).to(buff.device))
-            action = action[0].cpu().detach().numpy()
-            log_prob = log_prob[0].cpu().detach().numpy()
-            value = value[0].cpu().detach().numpy()
             next_obs, rew, done, info = env.step(action)
             buff.add(obs, action, [rew], [ep_start], value,log_prob)
             ep_start = False

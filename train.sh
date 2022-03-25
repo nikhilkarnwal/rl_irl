@@ -67,16 +67,34 @@ c_t=$(date "+%d_%m_%Y_%H_%M_%S")
 # --env=door-expert-v1 --config_file=config.yml \
 # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail10 --explore > "$c_t-adroit.txt"
 
+for itr in 1 2
+do
+    echo "Running $itr Iteration"
 
-c_t=$(date "+%d_%m_%Y_%H_%M_%S")
-python train_rl.py --gen=sac \
---env=door-expert-v1 --config_file=config.yml \
---trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail5 --sh --explore> "$c_t-adroit.txt"
+    # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    # python train_rl.py --gen=sac \
+    # --env=door-expert-v1 --config_file=config.yml \
+    # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail5 --sh --explore > "$c_t-adroit.txt"
 
-c_t=$(date "+%d_%m_%Y_%H_%M_%S")
-python train_rl.py --gen=sac \
---env=door-expert-v1 --config_file=config.yml \
---trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail5 --sh --explore> "$c_t-adroit.txt"
+    # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    # python train_rl.py --gen=sac \
+    # --env=door-expert-v1 --config_file=config.yml \
+    # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail5 --sh --explore --spec_norm > "$c_t-adroit.txt"
+
+
+    # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    # python train_rl.py --gen=sac \
+    # --env=door-expert-v1 --config_file=config.yml \
+    # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail6 --sh --explore> "$c_t-adroit.txt"
+
+    c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    python train_rl.py --gen=sac \
+    --env=door-expert-v1 --config_file=config.yml \
+    --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail7 --sh --explore> "$c_t-adroit.txt"
+
+done
+
+
 
 # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
 # python train_rl.py --gen=ppo \
