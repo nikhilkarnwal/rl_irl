@@ -2,6 +2,7 @@ from calendar import day_abbr
 from distutils.log import info
 from turtle import forward
 import gym
+from matplotlib.pyplot import axis
 import numpy as np
 
 from stable_baselines3.common.env_util import make_vec_env
@@ -96,7 +97,7 @@ class ContinuousPolicy(nn.Module):
         values = self.value(obs)
         acts, prob = self.head(acts)
 
-        return (acts, prob), values
+        return (acts, torch.sum(prob,dim=-1)), values
 
     def update(self, obs,next_obs, rew, acts):
         logs ={}
@@ -135,9 +136,9 @@ class ContinuousPolicy(nn.Module):
         return ret
 
 
-from stable_baselines3.common.buffers import RolloutBuffer
+from stable_baselines3.common.buffers import RolloutBuffer, ReplayBuffer
 
-def collect_rollout(env: gym.Env, buff: RolloutBuffer, timesteps, policy):
+def collect_rollout(env: gym.Env, buff: ReplayBuffer, timesteps, policy):
     curr_steps = 0
     while curr_steps < timesteps:
         obs  = env.reset()
@@ -146,10 +147,11 @@ def collect_rollout(env: gym.Env, buff: RolloutBuffer, timesteps, policy):
             obs_tensor = torch.tensor(obs,dtype=torch.double, device=buff.device).unsqueeze(0)
             (action, log_prob), value = policy.predict(torch.FloatTensor(obs).to(buff.device))
             action = action[0].cpu().detach().numpy()
-            log_prob = log_prob[0].cpu().detach().numpy()
-            value = value[0].cpu().detach().numpy()
+            log_prob = log_prob[0].cpu().detach()
+            value = value[0].cpu().detach()
             next_obs, rew, done, info = env.step(action)
-            buff.add(obs, action, [rew], [ep_start], value,log_prob)
+            print(obs.shape, log_prob.shape)
+            buff.add(obs=obs,next_obs= next_obs,action= action,reward= [rew], done= [done], infos=[info])
             ep_start = False
             if done:
                 break;
@@ -161,7 +163,7 @@ def collect_rollout(env: gym.Env, buff: RolloutBuffer, timesteps, policy):
 
 
 class A2CLearner:
-    def __init__(self, env: gym.Env, rollout_buff: RolloutBuffer = None, buff_size=1000000, batch_size = 256, logger= None) -> None:
+    def __init__(self, env: gym.Env, rollout_buff: ReplayBuffer = None, buff_size=1000000, batch_size = 256, logger= None) -> None:
         self.env = env
         self.rollout_buff = rollout_buff
         self.batch_size = batch_size
@@ -172,7 +174,9 @@ class A2CLearner:
         
     def _setup_model(self):
         if self.rollout_buff is None:
-            self.rollout_buff = RolloutBuffer(self.buff_size, self.env.observation_space, self.env.action_space, self.device)
+            self.rollout_buff = ReplayBuffer(
+                self.buff_size, self.env.observation_space, 
+                self.env.action_space, self.device)
 
         self.policy = ContinuousPolicy(self.env.observation_space.shape[0],self.env.action_space.shape[0],self.env.action_space).to(self.device)
 
@@ -180,19 +184,21 @@ class A2CLearner:
     def train(self, epochs=10, total_timesteps=1000000):
         pbar = trange(total_timesteps)
         pbar.set_description('Training Policy')
-        for timestep in pbar:
-            curr_ts = collect_rollout(self.env, self.rollout_buff, self.batch_size, self.policy)
+        curr_ts = 0
+        while curr_ts < total_timesteps:
+            curr_ts += collect_rollout(self.env, self.rollout_buff, self.batch_size, self.policy)
             curr_logs = {}
             for i in range(epochs):
                 data = self.rollout_buff.sample(self.batch_size)
 
-                _logs = self.policy.update(data.observations, data.next_observations, data.rewards, data.actions)
+                _logs = self.policy.update(data.observations.to(dtype=torch.float32), data.next_observations, data.rewards, data.actions)
                 for (k,v) in _logs.items():
                     if k not in curr_logs.keys():
                         curr_logs[k] = []
                     curr_logs[k].append(v)
             pbar.update(curr_ts)
             pbar.set_postfix({k:np.mean(v) for (k,v) in curr_logs.items()})
+        pbar.close()
         print("Done!")
             
 
