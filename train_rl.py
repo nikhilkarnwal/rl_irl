@@ -42,6 +42,22 @@ cfg = {}
 
 os.environ["WANDB_API_KEY"]="90852721fdf4fb388c7f75ad45a5a0629bfc4bbf"
 
+import numpy as np
+import random
+
+
+def set_random_seed(seed):
+    if seed is not None:
+        print("Seed set - ", seed)
+        import torch
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
+
 def build_env(name,args):
     env = gym.make(name)
     env.render = env.env.sim.render
@@ -151,9 +167,11 @@ def run_gail(name, transitions, args, work_dir):
                 action_space=venv.action_space,
                 # **{"hid_sizes": (256,256)}
             )
-    for key in reward_net.mlp._modules.keys():
-        if isinstance(reward_net.mlp._modules[key],nn.Linear):
-            reward_net.mlp._modules[key] = spectral_norm(reward_net.mlp._modules[key])
+    if args.spec_norm:
+        print("Running with Spectral Norm")
+        for key in reward_net.mlp._modules.keys():
+            if isinstance(reward_net.mlp._modules[key],nn.Linear):
+                reward_net.mlp._modules[key] = spectral_norm(reward_net.mlp._modules[key])
     wandb.watch(reward_net)
     # if not args.reward:
     #     reward_net = None
@@ -458,6 +476,7 @@ def main():
     parser.add_argument('--explore', action='store_true', default=False)
     parser.add_argument('--reward', action='store_true', default=False)
     parser.add_argument('--sh', action='store_true', default=False)
+    parser.add_argument('--spec_norm', action='store_true', default=False)
 
     parser.add_argument('--test_model', action='store_true', default=False)
     parser.add_argument('--abs', action='store_true', default=False)
@@ -469,7 +488,13 @@ def main():
                         type=int, default=500000)
 
     parser.add_argument('--config_file', type=str, default=None)
+    parser.add_argument('--seed', type=int, default=None, help='random seed')
+    
     args = parser.parse_args()
+
+    if args.seed == None:
+        args.seed = np.random.randint(2 ** 32 - 1, dtype="int64").item()
+    set_random_seed(args.seed)
     name = args.env
 
     env = init(name,args)
