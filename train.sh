@@ -94,7 +94,7 @@ do
 
     c_t=$(date "+%d_%m_%Y_%H_%M_%S")
     python train_rl.py --gen=ppo \
-    --env=door-expert-v1 --config_file=ppo_config.yml --gen_trajs --num_trajs=1000> "$c_t-adroit.txt"
+    --env=door-expert-v1 --config_file=ppo_config.yml --gen_trajs --num_trajs=1000 --save_video > "$c_t-adroit.txt"
 
 done
 
