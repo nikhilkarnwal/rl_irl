@@ -66,10 +66,10 @@ def build_env(name,args):
     print(f"Spaces- obs : {env.observation_space}, action : {env.action_space}")
     if args.abs :
         nenv = IRLASWrapper(gym.make(name),0)
-        venv = util.make_vec_env(name, n_envs=1,post_wrappers=[IRLASWrapper])
+        venv = util.make_vec_env(name, n_envs=n_envs,post_wrappers=[IRLASWrapper])
     else:
         nenv = env
-        venv = util.make_vec_env(name, n_envs=1)
+        venv = util.make_vec_env(name, n_envs=n_envs)
     return venv, nenv, env
 
 class AAdam(th.optim.Adam):
