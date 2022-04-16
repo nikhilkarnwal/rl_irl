@@ -74,6 +74,59 @@ class Network(nn.Module):
         action = self.model(obs)
         return action
 
+class Policy(nn.Module):
+
+    def __init__(self, obs_shape, action_shape, action_space) -> None:
+        super().__init__()
+        self.policy = Network(obs_shape, action_shape, 64,3)
+        self.value = Network(obs_shape,1,64,3)
+        self.value_optim = torch.optim.Adam(self.value.parameters())
+        self.policy_optim = torch.optim.Adam(iter( self.policy.parameters()))
+        self.actv = nn.Softmax()
+
+    def forward(self, obs):
+        acts = self.policy(obs)
+        values = self.value(obs)
+
+        return acts, values
+
+    def update(self, obs,next_obs, rew, acts):
+        logs ={}
+        # train value function
+        with torch.no_grad():
+            expected_v = rew + self.value(next_obs)
+        self.value.train()
+        actual_v = self.value(obs)
+        self.value_optim.zero_grad()
+        v_loss  = F.mse_loss(expected_v, actual_v)
+        logs['v_loss'] = v_loss.item()
+        v_loss.backward()
+        self.value_optim.step()
+
+
+        # train policy
+        with torch.no_grad():
+            adv = rew + self.value(next_obs) - self.value(obs)
+
+        self.policy.train()
+        self.head.train()
+        self.policy_optim.zero_grad()
+
+        actual_acts, log_prob = self.head(self.policy(obs))
+
+        act_loss = torch.mean(log_prob*adv)
+        logs['act_loss'] = act_loss.item()
+        act_loss.backward()
+        self.policy_optim.step()
+
+        return logs
+    
+    def predict(self, obs):
+        with torch.no_grad():
+            ret = self.forward(obs)
+        return (self.actv(ret[0]).cpu().to_numpy())
+
+
 class ContinuousPolicy(nn.Module):
 
     def __init__(self, obs_shape, action_shape, action_space) -> None:
