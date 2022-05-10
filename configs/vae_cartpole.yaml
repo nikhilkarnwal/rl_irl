@@ -1,0 +1,30 @@
+model_params:
+  in_dim: 5
+  enc_dims: [8,8,4]
+  z_dim: 4
+
+traj_file: "/media/biswas/D/rl_irl/test_env/CartPole-v1/30_12_2021-17_58_15/trajs"
+env: "CartPole-v1"
+
+data_params:
+  data_path: "Data/"
+  train_batch_size: 64
+  val_batch_size:  64
+  patch_size: 64
+  num_workers: 4
+
+
+exp_params:
+  LR: 0.005
+  weight_decay: 0.0
+  scheduler_gamma: 0.95
+  kld_weight: 0.00025
+  manual_seed: 1265
+
+trainer_params:
+  gpus: 1
+  max_epochs: 25
+
+logging_params:
+  save_dir: "/media/biswas/D/rl_irl/test_env/cartpole/vae/logs/"
+  name: "MLPVAE"

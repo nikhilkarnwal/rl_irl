@@ -30,18 +30,109 @@ Hopper-v3:
   policy: 'MlpPolicy'
 
 
-
-Gail10:
-  demo_batch_size: 1024
-  gen_train_timesteps: 1024
+Gail1:
+  demo_batch_size: 20000
+  gen_train_timesteps: 20000
   lr: !!float 1e-3
-  ts: !!float 2e6
+  ts: !!float 3e6
+  round: 1
+  wd: !!float 0
+
+Gail2:
+  demo_batch_size: 20000
+  gen_train_timesteps: 40000
+  lr: !!float 1e-3
+  ts: !!float 3e6
+  round: 1
+  wd: !!float 0
+
+Gail3:
+  demo_batch_size: 20000
+  gen_train_timesteps: 20000
+  lr: !!float 1e-3
+  ts: !!float 3e6
   round: 2
   wd: !!float 0
 
-door-expert-v1:
-  n_envs: 1
+Gail4:
+  demo_batch_size: 20000
+  gen_train_timesteps: 40000
+  lr: !!float 1e-3
+  ts: !!float 3e6
+  round: 2
+  wd: !!float 0
+
+Gail5:
+  demo_batch_size: 1024
+  gen_train_timesteps: 20000
+  lr: !!float 1e-3
+  ts: !!float 3e6
+  round: 2
+  wd: !!float 0
+
+Gail6:
+  demo_batch_size: 1024
+  gen_train_timesteps: 1024
+  lr: !!float 1e-3
+  ts: !!float 3e6
+  round: 2
+  wd: !!float 0
+
+  # bs=256
+ppo1:
+  n_envs: 16
   n_timesteps: !!float 3e6
+  learning_rate: !!float 0.0003
+  batch_size: 256
+  n_steps: 8000
   policy: 'MlpPolicy'
   verbose: 1
+
+# bs=1024
+ppo2:
+  n_envs: 16
+  n_timesteps: !!float 3e6
+  learning_rate: !!float 0.0003
+  batch_size: 1024
+  n_steps: 8000
+  policy: 'MlpPolicy'
+  verbose: 1
+
+# bs=256,n_steps =16000  
+ppo3:
+  n_envs: 16
+  n_timesteps: !!float 3e6
+  learning_rate: !!float 0.0003
   batch_size: 256
+  n_steps: 16000
+  policy: 'MlpPolicy'
+  verbose: 1
+
+# bs=1024,n_steps =16000  
+ppo4:
+  n_envs: 16
+  n_timesteps: !!float 3e6
+  learning_rate: !!float 0.0003
+  batch_size: 1024
+  n_steps: 16000
+  policy: 'MlpPolicy'
+  verbose: 1
+
+# bs=256,n_steps =1024  
+ppo5:
+  n_envs: 16
+  n_timesteps: !!float 3e6
+  learning_rate: !!float 0.0003
+  batch_size: 256
+  n_steps: 1024
+  policy: 'MlpPolicy'
+  verbose: 1
+
+CartPole-v1:
+  n_envs: 1
+  n_timesteps: !!float 1e5
+  policy: 'MlpPolicy'
+  n_steps: 256
+  batch_size: 256
+  learning_rate: !!float 0.001
+  verbose: 1

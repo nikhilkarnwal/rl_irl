@@ -4,7 +4,6 @@ import argparse
 from distutils.command.config import config
 from distutils.log import info
 import os
-from tabnanny import verbose
 from typing import Tuple
 import numpy as np
 import gym
@@ -19,6 +18,7 @@ import pickle
 import tempfile
 from torch import nn
 import stable_baselines3 as sb3
+import torch
 from wandb import wandb
 from wandb.integration.sb3 import WandbCallback
 
@@ -33,6 +33,9 @@ from utils import ReplayBufferFHAS, TrajReplayABS, ReplayBufferAS, IRLASWrapper
 import d4rl
 from imitation.data import types
 from imitation.rewards import reward_nets
+from vae_experiment import VAEXperiment
+
+from vae_mlp import MLPVAE
 gen_algo_cfg = {}
 import torch as th
 
@@ -60,16 +63,17 @@ def set_random_seed(seed):
 
 def build_env(name,args):
     env = gym.make(name)
-    env.render = env.env.sim.render
+    if name == "door-expert-v1":
+        env.render = env.env.sim.render
     n_envs = gen_algo_cfg.pop('n_envs',1)
     n_ts = gen_algo_cfg.pop('n_timesteps',100000)
     print(f"Spaces- obs : {env.observation_space}, action : {env.action_space}")
     if args.abs :
         nenv = IRLASWrapper(gym.make(name),0)
-        venv = util.make_vec_env(name, n_envs=n_envs,post_wrappers=[IRLASWrapper])
+        venv = util.make_vec_env(name, n_envs=n_envs,post_wrappers=[IRLASWrapper],parallel=True)
     else:
         nenv = env
-        venv = util.make_vec_env(name, n_envs=n_envs)
+        venv = util.make_vec_env(name, n_envs=n_envs,parallel=True)
     return venv, nenv, env
 
 class AAdam(th.optim.Adam):
@@ -273,6 +277,79 @@ def linear_schedule(initial_value: float):
 
     return func
 
+class RewardModel(nn.Module):
+    def __init__(self, model: nn.Module) -> None:
+        super().__init__()
+        self.model = model
+
+    def setup(self):
+        self.model.cuda()
+
+    def close(self):
+        self.model.cpu()
+
+    def forward(self, feat):
+        if isinstance(feat, np.ndarray):
+            feat = torch.FloatTensor(feat)
+        if feat.dim() == 1:
+            feat = feat.unsqueeze(0)
+        feat = feat.to('cuda')
+        x_cons, mu, log_var = self.model(feat)
+        kld_loss = -0.5 * torch.mean(torch.sum(1 + log_var - mu.pow(2) - log_var.exp(),-1))
+        # print(kld_loss)
+
+        kld_loss *= 100000000
+        # kld_loss += nn.functional.mse_loss(feat,x_cons)
+        # print(kld_loss)
+        reward =  -kld_loss
+        # reward = -torch.log(torch.clip(kld_loss,0,10)+1e-5)
+        # reward = nn.Tanh()(-kld_loss)
+        # reward = torch.exp(torch.clip(-kld_loss,-10,10))
+        return reward.item()
+
+    def get_rew(self, feat):
+        self.model.train(False)
+        return self.forward(feat)
+
+
+class VAEEnv(gym.Wrapper):
+    def __init__(self, env: gym.Env, reward_fn: RewardModel) -> None:
+        super().__init__(env)
+        self.env = env
+        self.reward_fn = reward_fn
+
+    def step(self, action):
+        observation, reward, done, info = super().step(action)
+        feat = np.concatenate((observation, np.array(action).reshape((-1))), axis=-1)
+        reward = self.reward_fn.get_rew(feat)
+        return observation, reward, done, info
+
+
+def load_reward_model(file):
+    # model = MLPVAE(in_dim=67, enc_dims=[64,64,32,32,16],  z_dim= 16)
+    model = MLPVAE(in_dim=5, enc_dims=[8,8,4],  z_dim= 4)
+    # checkpoint = torch.load(file)
+    # print(checkpoint.keys())
+    # model.load_state_dict(checkpoint['state_dict']['model'])
+    model = VAEXperiment.load_from_checkpoint(file, vae_model = model, params= {}).model
+    rew_model = RewardModel(model)
+    print(f"Reward model loaded from{file}")
+    return rew_model
+
+class VAEEnv2(gym.Wrapper):
+    def __init__(self, env: gym.Env, i:int) -> None:
+        super().__init__(env)
+        self.env = env
+        self.reward_fn = load_reward_model("/media/biswas/D/rl_irl/test_env/adroit/vae/logs/MLPVAE/version_15/checkpoints/epoch=41-step=32676.ckpt")
+        # self.reward_fn.setup()
+
+    def step(self, action):
+        self.reward_fn.setup()
+        observation, reward, done, info = super().step(action)
+        feat = np.concatenate((observation, action), axis=-1)
+        reward = self.reward_fn.get_rew(feat)
+        self.reward_fn.close()
+        return observation, reward, done, info
 
 def run_gen(name,args , work_dir="temp"):
     # Parallel environments
@@ -281,19 +358,36 @@ def run_gen(name,args , work_dir="temp"):
     
 
     # env = venv
-    env = util.make_vec_env(name, n_envs=1)
+    venv = util.make_vec_env(name, n_envs=1)
+
+    # venv2 = util.make_vec_env(name, n_envs=8, post_wrappers=[VAEEnv2], parallel=True)
+    
+    env = gym.make(name)
+    if name == "door-expert-v1":
+        env.render = env.env.sim.render
+
+    if args.reward_file != None:
+        rew_model = load_reward_model(args.reward_file)
+        rew_model.setup()
+
+        env = VAEEnv(env,rew_model)
+
     print(gen_algo_cfg)
     gen_algo = None
     callbks = []
     callbks.append(EvalCallback(
-            env,
+            venv,
             best_model_save_path=work_dir,
-            n_eval_episodes=20,
+            n_eval_episodes=50,
             log_path=work_dir,
             eval_freq=5000
         ))
+    callbks.append(WandbCallback(verbose=1,gradient_save_freq=10000))
     action_noise = None
-    n_actions = env.action_space.shape[-1]
+    if len(env.action_space.shape) > 0:
+        n_actions = env.action_space.shape[-1]
+    else:
+        n_actions = 1
     if args.explore:
         action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.2 * np.ones(n_actions))
 
@@ -311,6 +405,7 @@ def run_gen(name,args , work_dir="temp"):
         print('Model loaded')
     model.learn(total_timesteps=n_ts,eval_freq=10000,eval_log_path=work_dir, callback=callbks)
     model.save(f"{work_dir}/model")
+    rew_model.close()
     return model
 
 import tqdm
@@ -399,10 +494,10 @@ def load_params(args):
     global irl_cfg
     with open(args.config_file, "r") as f:
         hyperparams_dict = yaml.safe_load(f)
-        if args.env in list(hyperparams_dict.keys()):
-            hyperparams = hyperparams_dict[args.env]
+        if args.gen_hp in list(hyperparams_dict.keys()):
+            hyperparams = hyperparams_dict[args.gen_hp]
         else:
-            raise ValueError(f"Hyperparameters not found for {args.gen}-{args.env}")
+            raise ValueError(f"Hyperparameters not found for {args.gen}-{args.gen_hp}")
         if args.irl and args.irl in list(hyperparams_dict.keys()):
             irl_cfg = hyperparams_dict[args.irl]
         else:
@@ -466,6 +561,7 @@ def main():
     # Configurations
     parser.add_argument('--gen', help='gn algo', type=str, default='ppo')
     parser.add_argument('--irl', type=str, default=None)
+    parser.add_argument('--gen_hp', type=str, default="v1")
     parser.add_argument('--env', type=str, default="Walker2d-v2")
     parser.add_argument('--trajs', type=str, default=None)
     parser.add_argument('--resume_model', type=str, default=None)
@@ -488,6 +584,7 @@ def main():
                         type=int, default=500000)
 
     parser.add_argument('--config_file', type=str, default=None)
+    parser.add_argument('--reward_file', type=str, default=None)
     parser.add_argument('--seed', type=int, default=None, help='random seed')
     
     args = parser.parse_args()

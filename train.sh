@@ -67,7 +67,7 @@ c_t=$(date "+%d_%m_%Y_%H_%M_%S")
 # --env=door-expert-v1 --config_file=config.yml \
 # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail10 --explore > "$c_t-adroit.txt"
 
-for itr in 1 2
+for itr in 1
 do
     echo "Running $itr Iteration"
 
@@ -92,10 +92,36 @@ do
     # --env=door-expert-v1 --config_file=config.yml \
     # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail7 --sh --explore> "$c_t-adroit.txt"
 
+    # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    # python train_rl.py --gen=sac \
+    # --env=door-expert-v1 --config_file=sac_config.yml --gen_trajs --num_trajs=1000 --gen_hp="door-expert-v1" --explore \
+    # --save_video --reward_file="/media/biswas/D/rl_irl/test_env/adroit/vae/logs/MLPVAE/version_19/checkpoints/epoch=13-step=10892.ckpt" > "$c_t-adroit.txt"
+    
     c_t=$(date "+%d_%m_%Y_%H_%M_%S")
     python train_rl.py --gen=ppo \
-    --env=door-expert-v1 --config_file=ppo_config.yml --gen_trajs --num_trajs=1000 --save_video > "$c_t-adroit.txt"
+    --env=CartPole-v1 --config_file=ppo_config.yml --gen_trajs --num_trajs=1000 --gen_hp="CartPole-v1" --explore \
+    --save_video --reward_file="/media/biswas/D/rl_irl/test_env/cartpole/vae/logs/MLPVAE/version_7/checkpoints/epoch=24-step=1000.ckpt" > "$c_t-adroit.txt"
 
+    # for gid in 1 2 3 4 5 6
+    # do
+    #     for pid in 1 2 3
+    #     do
+    #         c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    #         python train_rl.py --gen=ppo \
+    #         --env=door-expert-v1 --config_file=ppo_config.yml \
+    #         --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl="Gail$gid" --gen_hp="ppo$pid" --sh --explore > "$c_t-adroit.txt" &
+    #     done
+    #     wait
+    #     for pid in 4 5
+    #     do
+    #         c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    #         python train_rl.py --gen=ppo \
+    #         --env=door-expert-v1 --config_file=ppo_config.yml \
+    #         --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl="Gail$gid" --gen_hp="ppo$pid" --sh --explore > "$c_t-adroit.txt" &
+    #     done
+    #     wait
+    #     echo "Done $itr - $gid for all pid"
+    # done
 done
 
 

@@ -1,0 +1,30 @@
+model_params:
+  in_dim: 67
+  enc_dims: [64,64,32,32,16]
+  z_dim: 16
+
+traj_file: "/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5"
+env: "door-expert-v1"
+
+data_params:
+  data_path: "Data/"
+  train_batch_size: 64
+  val_batch_size:  64
+  patch_size: 64
+  num_workers: 4
+
+
+exp_params:
+  LR: 0.005
+  weight_decay: 0.0
+  scheduler_gamma: 0.95
+  kld_weight: 0.00025
+  manual_seed: 1265
+
+trainer_params:
+  gpus: 1
+  max_epochs: 50
+
+logging_params:
+  save_dir: "/media/biswas/D/rl_irl/test_env/adroit/vae/logs/"
+  name: "MLPVAE"
