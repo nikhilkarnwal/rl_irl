@@ -191,9 +191,9 @@ class ContinuousPolicy(nn.Module):
 
 from stable_baselines3.common.buffers import RolloutBuffer, ReplayBuffer
 
-def collect_rollout(env: gym.Env, buff: ReplayBuffer, timesteps, policy):
+def collect_rollout(env: gym.Env, buff: RolloutBuffer, timesteps, policy):
     curr_steps = 0
-    while curr_steps < timesteps:
+    while curr_steps < timesteps:  
         obs  = env.reset()
         ep_start = True
         while True:

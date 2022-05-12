@@ -139,10 +139,10 @@ def run_gail(name, transitions, args, work_dir):
         action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.2 * np.ones(n_actions))
 
     policy_args = None
-    if args.reward:
+    if args.policy_kw:
         policy_args = {
-                "activation_fn":nn.Tanh,
-                "net_arch":[512,512]
+                "activation_fn":nn.ReLU,
+                "net_arch":[256,256]
             }
 
     if args.gen == 'ppo':
@@ -151,7 +151,7 @@ def run_gail(name, transitions, args, work_dir):
         gen_algo = sb3.SAC(
             env=venv,tensorboard_log=work_dir, **gen_algo_cfg, 
             replay_buffer_class=replay_bf_cls, replay_buffer_kwargs=replay_buffer_kwargs,
-            action_noise=action_noise, ent_coef="auto_5", 
+            action_noise=action_noise, ent_coef="auto_5",
             policy_kwargs=policy_args)
     # gen_algo.learn(100000)
     # gen_algo.collect_rollouts()
@@ -169,7 +169,7 @@ def run_gail(name, transitions, args, work_dir):
     reward_net = reward_nets.BasicRewardNet(
                 observation_space=venv.observation_space,
                 action_space=venv.action_space,
-                # **{"hid_sizes": (256,256)}
+                **{"hid_sizes": (64,)}
             )
     if args.spec_norm:
         print("Running with Spectral Norm")
@@ -177,6 +177,9 @@ def run_gail(name, transitions, args, work_dir):
             if isinstance(reward_net.mlp._modules[key],nn.Linear):
                 reward_net.mlp._modules[key] = spectral_norm(reward_net.mlp._modules[key])
     wandb.watch(reward_net)
+    wandb.run.summary["rew_model"] = reward_net.__dict__()
+    wandb.run.summary["policy_model"] = gen_algo.policy.__dict__()
+    wandb.run.summary["args"] = args.__dict__()
     # if not args.reward:
     #     reward_net = None
     # reward_net = None
@@ -205,7 +208,7 @@ def run_gail(name, transitions, args, work_dir):
         custom_logger=gail_logger, n_disc_updates_per_round=irl_cfg['round'],
         normalize_reward=False, normalize_obs=False,
         init_tensorboard_graph=True,
-        allow_variable_horizon=True,gen_train_timesteps = irl_cfg['gen_train_timesteps'],
+        allow_variable_horizon=True,
         disc_opt_kwargs={
             'lr': irl_cfg['lr'],
             # 'betas':(0.95, 0.999),}
@@ -570,7 +573,7 @@ def main():
     parser.add_argument('--save_video', action='store_true', default=False)
 
     parser.add_argument('--explore', action='store_true', default=False)
-    parser.add_argument('--reward', action='store_true', default=False)
+    parser.add_argument('--policy_kw', action='store_true', default=False)
     parser.add_argument('--sh', action='store_true', default=False)
     parser.add_argument('--spec_norm', action='store_true', default=False)
 
@@ -606,7 +609,7 @@ def main():
         project='rl_irl',
         config=args.__dict__,
         sync_tensorboard=True,
-        monitor_gym=True)
+        monitor_gym=True, save_code=True)
 
     if not os.path.exists(work_dir):
         os.makedirs(work_dir)

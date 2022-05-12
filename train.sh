@@ -67,21 +67,31 @@ c_t=$(date "+%d_%m_%Y_%H_%M_%S")
 # --env=door-expert-v1 --config_file=config.yml \
 # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail10 --explore > "$c_t-adroit.txt"
 
-for itr in 1
+for itr in 1 2 3
 do
     echo "Running $itr Iteration"
 
-    # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
-    # python train_rl.py --gen=sac \
-    # --env=door-expert-v1 --config_file=config.yml \
-    # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail5 --sh --explore > "$c_t-adroit.txt"
+    c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    python train_rl.py --gen=sac \
+    --env=door-expert-v1 --config_file=sac_config.yml \
+    --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail2 --gen_hp="door-expert-v1_2" --sh --explore --spec_norm --policy_kw > "$c_t-adroit.txt" &
 
-    # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
-    # python train_rl.py --gen=sac \
-    # --env=door-expert-v1 --config_file=config.yml \
-    # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail5 --sh --explore --spec_norm > "$c_t-adroit.txt"
+    c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    python train_rl.py --gen=sac \
+    --env=door-expert-v1 --config_file=sac_config.yml \
+    --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail2 --gen_hp="door-expert-v1_2" --spec_norm --policy_kw > "$c_t-adroit.txt" &
+    
+    c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    python train_rl.py --gen=sac \
+    --env=door-expert-v1 --config_file=sac_config.yml \
+    --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail1 --gen_hp="door-expert-v1_2" --sh --explore --spec_norm --policy_kw > "$c_t-adroit.txt" &
 
-
+    c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    python train_rl.py --gen=sac \
+    --env=door-expert-v1 --config_file=sac_config.yml \
+    --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail1 --gen_hp="door-expert-v1_2" --spec_norm --policy_kw > "$c_t-adroit.txt" &
+    
+    wait
     # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
     # python train_rl.py --gen=sac \
     # --env=door-expert-v1 --config_file=config.yml \
@@ -97,10 +107,10 @@ do
     # --env=door-expert-v1 --config_file=sac_config.yml --gen_trajs --num_trajs=1000 --gen_hp="door-expert-v1" --explore \
     # --save_video --reward_file="/media/biswas/D/rl_irl/test_env/adroit/vae/logs/MLPVAE/version_19/checkpoints/epoch=13-step=10892.ckpt" > "$c_t-adroit.txt"
     
-    c_t=$(date "+%d_%m_%Y_%H_%M_%S")
-    python train_rl.py --gen=ppo \
-    --env=CartPole-v1 --config_file=ppo_config.yml --gen_trajs --num_trajs=1000 --gen_hp="CartPole-v1" --explore \
-    --save_video --reward_file="/media/biswas/D/rl_irl/test_env/cartpole/vae/logs/MLPVAE/version_7/checkpoints/epoch=24-step=1000.ckpt" > "$c_t-adroit.txt"
+    # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    # python train_rl.py --gen=ppo \
+    # --env=CartPole-v1 --config_file=ppo_config.yml --gen_trajs --num_trajs=1000 --gen_hp="CartPole-v1" --explore \
+    # --save_video --reward_file="/media/biswas/D/rl_irl/test_env/cartpole/vae/logs/MLPVAE/version_7/checkpoints/epoch=24-step=1000.ckpt" > "$c_t-adroit.txt"
 
     # for gid in 1 2 3 4 5 6
     # do

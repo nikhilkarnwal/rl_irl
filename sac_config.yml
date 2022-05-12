@@ -29,19 +29,16 @@ CartPole-v1:
   verbose: 1
 
 Gail1:
-  demo_batch_size:  10000
-  gen_train_timesteps: 10000
-  lr: !!float 1e-3
-  ts: !!float 1e6
-  round: 2
+  demo_batch_size:  256
+  lr: !!float 3e-5
+  ts: !!float 3e6
+  round: 1
 
-# increase per step and no of round to keep same number of disc update
 Gail2:
-  demo_batch_size: 10000
-  gen_train_timesteps: 10000
-  lr: !!float 1e-3
-  ts: !!float 1e6
-  round: 4
+  demo_batch_size:  256
+  lr: !!float 3e-5
+  ts: !!float 3e6
+  round: 256
 
 
 # increase per step
@@ -131,12 +128,31 @@ Walker2d-v3:
   policy: 'MlpPolicy'
   verbose: 1
 
-door-expert-v1:
+door-expert-v1_1:
   n_envs: 1
-  n_timesteps: !!float 6e6
+  n_timesteps: !!float 3e6
   learning_starts: 10000
   policy: 'MlpPolicy'
   verbose: 1
-  # tau: !!float 0.01
+  tau: !!float 0.01
   buffer_size: 3000000
   batch_size: 256
+  learning_rate: !!float 3e-4
+  target_entropy: -14
+  gradient_steps: 256
+  gamma: 0.97
+
+door-expert-v1_2:
+  n_envs: 8
+  n_timesteps: !!float 3e6
+  learning_starts: 10000
+  policy: 'MlpPolicy'
+  verbose: 1
+  tau: !!float 0.01
+  buffer_size: 3000000
+  batch_size: 256
+  learning_rate: !!float 3e-4
+  target_entropy: -14
+  gradient_steps: 256
+  gamma: 0.97
+  
