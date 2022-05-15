@@ -52,6 +52,13 @@ Gail2:
   round: 1
   wd: 0
 
+Gail2_2:
+  demo_batch_size:  20480
+  gen_train_timesteps: 20480
+  lr: !!float 1e-3
+  ts: !!float 3e6
+  round: 2
+  wd: 0.01
 
 # increase per step
 Gail3:

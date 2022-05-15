@@ -89,7 +89,38 @@ class AAdam(th.optim.Adam):
 
 from torch.nn.utils import spectral_norm
 
-        
+    
+class IRLCallback:
+    counter = 1
+    def __init__(self) -> None:
+        self.counter = 1
+        self.all_inst = []
+
+    def add_cllbk(self, curr_inst):
+        self.all_inst.append(curr_inst)
+
+    def step(self,itr):
+        for i in range(len(self.all_inst)):
+            self.all_inst[i].step(itr)
+
+def linear_schedule(initial_value: float):
+    """
+    Linear learning rate schedule.
+
+    :param initial_value: Initial learning rate.
+    :return: schedule that computes
+      current learning rate depending on remaining progress
+    """
+    def func(progress_remaining: float) -> float:
+        """
+        Progress will decrease from 1 (beginning) to 0.
+
+        :param progress_remaining:
+        :return: current learning rate
+        """
+        return progress_remaining * initial_value
+
+    return func
 
 def run_gail(name, transitions, args, work_dir):
     # # Load pickled test demonstrations.
@@ -152,11 +183,12 @@ def run_gail(name, transitions, args, work_dir):
     if args.gen == 'ppo':
         gen_algo = PPO(env=venv,tensorboard_log=work_dir, **gen_algo_cfg)
     else:
+        lr = linear_schedule(gen_algo_cfg.pop("learning_rate"))
         gen_algo = sb3.SAC(
             env=venv,tensorboard_log=work_dir, **gen_algo_cfg, 
             replay_buffer_class=replay_bf_cls, replay_buffer_kwargs=replay_buffer_kwargs,
             action_noise=action_noise, ent_coef="auto_5",
-            policy_kwargs=policy_args)
+            policy_kwargs=policy_args, learning_rate=lr)
     # gen_algo.learn(100000)
     # gen_algo.collect_rollouts()
     # gail_trainer = airl.AIRL(
@@ -217,6 +249,10 @@ def run_gail(name, transitions, args, work_dir):
             # 'betas':(0.95, 0.999),}
             'weight_decay':irl_cfg['wd'],},
     )
+    def gail_step(self,itr):
+        self.demo_batch_size=max(self.demo_batch_size//(itr+1),256)
+
+    gail_trainer.__setattr__("step",gail_step)
 
     scheduler = th.optim.lr_scheduler.ExponentialLR(gail_trainer._disc_opt, gamma=0.95, verbose=True)
     # scheduler = None
@@ -231,10 +267,11 @@ def run_gail(name, transitions, args, work_dir):
         ))
     gail_trainer.gen_callback = [*callbks,gail_trainer.gen_callback, WandbCallback(verbose=1,gradient_save_freq=10000)]
     gail_trainer.allow_variable_horizon = True
+    gail_callback = IRLCallback()
+    gail_callback.add_cllbk(gail_callback)
     if args.sh:
-        gail_trainer.train(total_timesteps=int(irl_cfg['ts']), callback=scheduler.step)
-    else:
-        gail_trainer.train(total_timesteps=int(irl_cfg['ts']))
+        gail_callback.add_cllbk(scheduler)
+    gail_trainer.train(total_timesteps=int(irl_cfg['ts']), callback=gail_callback.step)
     # Train AIRL on expert data.
     # airl_logger = logger.configure(tempdir_path / "AIRL/")
     # airl_trainer = airl.AIRL(
@@ -264,24 +301,7 @@ def run_gail(name, transitions, args, work_dir):
 #     gen_algo._update_info_buffer(info)
 # print(gen_algo.ep_info_buffer)
 
-def linear_schedule(initial_value: float):
-    """
-    Linear learning rate schedule.
 
-    :param initial_value: Initial learning rate.
-    :return: schedule that computes
-      current learning rate depending on remaining progress
-    """
-    def func(progress_remaining: float) -> float:
-        """
-        Progress will decrease from 1 (beginning) to 0.
-
-        :param progress_remaining:
-        :return: current learning rate
-        """
-        return progress_remaining * initial_value
-
-    return func
 
 class RewardModel(nn.Module):
     def __init__(self, model: nn.Module) -> None:
