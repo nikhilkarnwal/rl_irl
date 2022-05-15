@@ -67,31 +67,30 @@ c_t=$(date "+%d_%m_%Y_%H_%M_%S")
 # --env=door-expert-v1 --config_file=config.yml \
 # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail10 --explore > "$c_t-adroit.txt"
 
-for itr in 1 2 3
+for itr in 1 2
 do
     echo "Running $itr Iteration"
 
-    c_t=$(date "+%d_%m_%Y_%H_%M_%S")
-    python train_rl.py --gen=sac \
-    --env=door-expert-v1 --config_file=sac_config.yml \
-    --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail2 --gen_hp="door-expert-v1_2" --sh --explore --spec_norm --policy_kw > "$c_t-adroit.txt" &
+    # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    # python -m cProfile -s cumtime train_rl.py --gen=sac \
+    # --env=door-expert-v1 --config_file=sac_config.yml \
+    # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail1 --gen_hp="door-expert-v1_1" --sh --explore --spec_norm --policy_kw > "$c_t-adroit.txt"
 
-    c_t=$(date "+%d_%m_%Y_%H_%M_%S")
-    python train_rl.py --gen=sac \
-    --env=door-expert-v1 --config_file=sac_config.yml \
-    --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail2 --gen_hp="door-expert-v1_2" --spec_norm --policy_kw > "$c_t-adroit.txt" &
+    # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    # python -m cProfile -s cumtime train_rl.py --gen=sac \
+    # --env=door-expert-v1 --config_file=sac_config.yml \
+    # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail1 --gen_hp="door-expert-v1_1" --spec_norm --policy_kw > "$c_t-adroit.txt"
     
     c_t=$(date "+%d_%m_%Y_%H_%M_%S")
-    python train_rl.py --gen=sac \
+    python -m cProfile -s cumtime train_rl.py --gen=sac \
     --env=door-expert-v1 --config_file=sac_config.yml \
-    --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail1 --gen_hp="door-expert-v1_2" --sh --explore --spec_norm --policy_kw > "$c_t-adroit.txt" &
+    --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail1_1 --gen_hp="door-expert-v1_2" --spec_norm --policy_kw > "$c_t-adroit.txt"
 
-    c_t=$(date "+%d_%m_%Y_%H_%M_%S")
-    python train_rl.py --gen=sac \
-    --env=door-expert-v1 --config_file=sac_config.yml \
-    --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail1 --gen_hp="door-expert-v1_2" --spec_norm --policy_kw > "$c_t-adroit.txt" &
+    # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
+    # python -m cProfile -s cumtime train_rl.py --gen=sac \
+    # --env=door-expert-v1 --config_file=sac_config.yml \
+    # --trajs=/media/biswas/D/d4rl/door-expert-v1/door-expert-v1.hdf5 --irl=Gail1 --gen_hp="door-expert-v1_1" --explore --spec_norm --policy_kw > "$c_t-adroit.txt"
     
-    wait
     # c_t=$(date "+%d_%m_%Y_%H_%M_%S")
     # python train_rl.py --gen=sac \
     # --env=door-expert-v1 --config_file=config.yml \

@@ -35,6 +35,10 @@ from imitation.data import types
 from imitation.rewards import reward_nets
 from vae_experiment import VAEXperiment
 
+
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.vec_env import SubprocVecEnv
+
 from vae_mlp import MLPVAE
 gen_algo_cfg = {}
 import torch as th
@@ -73,7 +77,7 @@ def build_env(name,args):
         venv = util.make_vec_env(name, n_envs=n_envs,post_wrappers=[IRLASWrapper],parallel=True)
     else:
         nenv = env
-        venv = util.make_vec_env(name, n_envs=n_envs,parallel=True)
+        venv = util.make_vec_env(name, n_envs=n_envs,parallel=True)#make_vec_env(name, vec_env_cls=SubprocVecEnv, n_envs=n_envs)
     return venv, nenv, env
 
 class AAdam(th.optim.Adam):
@@ -125,7 +129,7 @@ def run_gail(name, transitions, args, work_dir):
     # Train GAIL on expert data.
     # GAIL, and AIRL also accept as `demonstrations` any Pytorch-style DataLoader that
     # iterates over dictionaries containing observations, actions, and next_observations.
-    gail_logger = logger.configure(tempdir_path / "GAIL/")
+    gail_logger = logger.configure(tempdir_path / "GAIL/", ["stdout", "csv", "tensorboard"])
     # setting replay buffer
     replay_buffer_kwargs={'ep_max_len': env._max_episode_steps}
     if args.abs:
@@ -177,9 +181,8 @@ def run_gail(name, transitions, args, work_dir):
             if isinstance(reward_net.mlp._modules[key],nn.Linear):
                 reward_net.mlp._modules[key] = spectral_norm(reward_net.mlp._modules[key])
     wandb.watch(reward_net)
-    wandb.run.summary["rew_model"] = reward_net.__dict__()
-    wandb.run.summary["policy_model"] = gen_algo.policy.__dict__()
-    wandb.run.summary["args"] = args.__dict__()
+    wandb.run.summary["rew_model"] = reward_net.__repr__
+    wandb.run.summary["policy_model"] = gen_algo.policy.__repr__
     # if not args.reward:
     #     reward_net = None
     # reward_net = None
@@ -206,7 +209,7 @@ def run_gail(name, transitions, args, work_dir):
         demo_batch_size=irl_cfg['demo_batch_size'],
         gen_algo=gen_algo,
         custom_logger=gail_logger, n_disc_updates_per_round=irl_cfg['round'],
-        normalize_reward=False, normalize_obs=False,
+        normalize_reward=False, normalize_obs=False,gen_train_timesteps=irl_cfg['gen_train_timesteps'],
         init_tensorboard_graph=True,
         allow_variable_horizon=True,
         disc_opt_kwargs={
@@ -353,6 +356,64 @@ class VAEEnv2(gym.Wrapper):
         reward = self.reward_fn.get_rew(feat)
         self.reward_fn.close()
         return observation, reward, done, info
+
+
+def run_gen_v2(name,args , work_dir="temp"):
+    # Parallel environments
+    n_envs = gen_algo_cfg.pop('n_envs')
+    n_ts = gen_algo_cfg.pop('n_timesteps')
+    
+
+    # env = venv
+    venv = util.make_vec_env(name, n_envs=1)
+
+    # venv2 = util.make_vec_env(name, n_envs=8, post_wrappers=[VAEEnv2], parallel=True)
+    
+    env = gym.make(name)
+    if name == "door-expert-v1":
+        env.render = env.env.sim.render
+
+    if args.reward_file != None:
+        rew_model = load_reward_model(args.reward_file)
+        rew_model.setup()
+
+        env = VAEEnv(env,rew_model)
+
+    print(gen_algo_cfg)
+    gen_algo = None
+    callbks = []
+    callbks.append(EvalCallback(
+            venv,
+            best_model_save_path=work_dir,
+            n_eval_episodes=50,
+            log_path=work_dir,
+            eval_freq=5000
+        ))
+    callbks.append(WandbCallback(verbose=1,gradient_save_freq=10000))
+    action_noise = None
+    if len(env.action_space.shape) > 0:
+        n_actions = env.action_space.shape[-1]
+    else:
+        n_actions = 1
+    if args.explore:
+        action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=0.2 * np.ones(n_actions))
+
+    if args.gen == 'ppo':
+        model = PPO(env=env,tensorboard_log=work_dir, **gen_algo_cfg)
+        gen_algo = PPO
+    else:
+        model = sb3.SAC(env=env,tensorboard_log=work_dir, action_noise=action_noise, ent_coef=2, **gen_algo_cfg)
+        gen_algo = sb3.SAC
+    
+    if args.resume_model != None:
+        del model
+        model = gen_algo.load(args.resume_model,env=env, print_system_info=True, force_reset=True)
+        model.tensorboard_log = work_dir
+        print('Model loaded')
+    model.learn(total_timesteps=n_ts,eval_freq=10000,eval_log_path=work_dir, callback=callbks)
+    model.save(f"{work_dir}/model")
+    rew_model.close()
+    return model
 
 def run_gen(name,args , work_dir="temp"):
     # Parallel environments
@@ -604,16 +665,17 @@ def main():
     # name = "CartPole-v1"
     work_dir = f"/media/biswas/D/rl_irl/test_env/{name}/{dt_string}/"
 
-    run = wandb.init(
-        name=f'{name}-{dt_string}',
-        project='rl_irl',
-        config=args.__dict__,
-        sync_tensorboard=True,
-        monitor_gym=True, save_code=True)
 
     if not os.path.exists(work_dir):
         os.makedirs(work_dir)
         print(f"Creating dir-{work_dir}")
+
+    run = wandb.init(
+        name=f'{name}-{dt_string}', dir=work_dir,
+        project='rl_irl',
+        config=args.__dict__,
+        sync_tensorboard=True,
+        monitor_gym=False)
 
     print(f"Storing at {work_dir}")
     with open(f'{work_dir}/desc_file.txt', 'w') as fd:

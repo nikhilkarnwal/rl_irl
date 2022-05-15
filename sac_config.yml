@@ -30,15 +30,27 @@ CartPole-v1:
 
 Gail1:
   demo_batch_size:  256
+  gen_train_timesteps: 1
   lr: !!float 3e-5
   ts: !!float 3e6
   round: 1
+  wd: 0
 
-Gail2:
-  demo_batch_size:  256
+Gail1_1:
+  demo_batch_size:  20480
+  gen_train_timesteps: 1600
   lr: !!float 3e-5
   ts: !!float 3e6
-  round: 256
+  round: 20
+  wd: 0
+
+Gail2:
+  demo_batch_size:  10000
+  gen_train_timesteps: 10000
+  lr: !!float 3e-5
+  ts: !!float 3e6
+  round: 1
+  wd: 0
 
 
 # increase per step
@@ -139,11 +151,11 @@ door-expert-v1_1:
   batch_size: 256
   learning_rate: !!float 3e-4
   target_entropy: -14
-  gradient_steps: 256
+  gradient_steps: 1
   gamma: 0.97
 
 door-expert-v1_2:
-  n_envs: 8
+  n_envs: 1
   n_timesteps: !!float 3e6
   learning_starts: 10000
   policy: 'MlpPolicy'
@@ -153,6 +165,7 @@ door-expert-v1_2:
   batch_size: 256
   learning_rate: !!float 3e-4
   target_entropy: -14
-  gradient_steps: 256
+  gradient_steps: 8
   gamma: 0.97
+  train_freq: 8
   
