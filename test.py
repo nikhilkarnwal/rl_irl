@@ -13,7 +13,7 @@ from train_rl import load_reward_model
 parser = argparse.ArgumentParser(description='Run RL training code')
 # Configurations
 parser.add_argument('--abs', action='store_true', default=False)
-parser.add_argument('--env', type=str, default="CartPole-v1")
+parser.add_argument('--env', type=str, default="Hopper-v3")
 args = parser.parse_args()
 name = args.env
 
@@ -34,7 +34,7 @@ print(env.action_space)
 #     return kld 
 
 
-trajs = load("/media/biswas/D/rl_irl/test_env/CartPole-v1/30_12_2021-17_58_15/trajs")
+trajs = load("/media/biswas/D/rl_irl/test_env/Hopper-v3/03_01_2022-16_10_09/trajs")
 # trajs = rollout.flatten_trajectories(list(trajs))
 # for j in range(3):    
 #     obs = trajs[5+j].obs
@@ -48,7 +48,7 @@ from gym.envs.classic_control.cartpole import CartPoleEnv
 obs = env.reset()
 id=0
 print(type(env),isinstance(env,CartPoleEnv))
-expert = True
+expert = False
 if expert:
     env.env.state = trajs[id].obs[0]
     obs = trajs[id].obs[0]
@@ -56,7 +56,7 @@ if expert:
     print(trajs[id].obs[0])
 
 
-rew_model = load_reward_model("/media/biswas/D/rl_irl/test_env/cartpole/vae/logs/MLPVAE/version_7/checkpoints/epoch=24-step=1000.ckpt")
+rew_model = load_reward_model("/media/biswas/D/rl_irl/test_env/hopper/gaussmlp/logs/GaussMLP/version_12/checkpoints/epoch=2-step=1944.ckpt")
 rew_model.setup()
 
 cnt=0
@@ -76,14 +76,14 @@ while cnt < 5:
     action = env.action_space.sample()
     # obs = env.observation_space.sample()
 
-    n_rew.append(rew_model.get_rew(np.concatenate((obs, [action]), -1)))
+    # n_rew.append(rew_model.get_rew(np.concatenate((obs, action), -1)))
     if expert:
         obs, action = (trajs[id].obs[cid],trajs[id].acts[cid])
 
     if cid >= len_act:
         action = env.action_space.sample()
 
-    # n_rew.append(rew_model.get_rew(np.concatenate((obs, [action]), -1)))
+    n_rew.append(rew_model.get_rew(np.concatenate((obs, action), -1)))
     obs,r,d,info = env.step(action)
     # print(obs,env.env.state, trajs[id].obs[cid+1])
     cid+=1
@@ -113,17 +113,17 @@ print(np.mean(lens),np.std(lens))
 print(np.mean(rews),np.std(rews))
 
 # print('Obs', np.mean(obs_all,0), np.var(obs_all,0))
-# print(np.mean(n_rews, axis=0))
+print(np.mean(n_rews, axis=0))
 # print(len(n_rews), [len(r) for r in n_rews])
 # print(np.mean(n_rews))
-# plt.plot(np.arange(len(n_rews)), n_rews)
+plt.plot(np.arange(len(n_rews)), n_rews)
 # plt.show()
-# if expert:
-#     plt.savefig('expert_all.png')
-# else:
-#     plt.savefig('sample_all.png')
+if expert:
+    plt.savefig('expert_all.png')
+else:
+    plt.savefig('sample_all.png')
 
 plt.hist(n_rews,density=True)
-plt.savefig('sample_all.png')
+plt.savefig('hist_sample_all.png')
 # plt.hist(np.asarray(obs_all)[:,4],density=True)
 # plt.show()

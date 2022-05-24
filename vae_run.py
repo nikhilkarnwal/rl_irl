@@ -17,6 +17,7 @@ import d4rl
 from imitation.data import types
 from imitation.data.types import TrajectoryWithRew, load
 from imitation.data import rollout
+from gauss_mlp import GaussMLP
 
 def build_env(name):
     env = gym.make(name)
@@ -53,8 +54,12 @@ tb_logger =  TensorBoardLogger(save_dir=config['logging_params']['save_dir'],
 
 # For reproducibility
 seed_everything(config['exp_params']['manual_seed'], True)
+if config['model_name'] == "mlpvae":
+    model_clss = MLPVAE
+elif config['model_name'] == "gaussmlp":
+    model_clss = GaussMLP
 
-model = MLPVAE(**config['model_params'])
+model =  model_clss(**config['model_params'])
 print(model)
 experiment = VAEXperiment(model,config['exp_params'])
 
@@ -78,8 +83,8 @@ runner = Trainer(logger=tb_logger,
                  **config['trainer_params'])
 
 
-Path(f"{tb_logger.log_dir}/Samples").mkdir(exist_ok=True, parents=True)
-Path(f"{tb_logger.log_dir}/Reconstructions").mkdir(exist_ok=True, parents=True)
+# Path(f"{tb_logger.log_dir}/Samples").mkdir(exist_ok=True, parents=True)
+# Path(f"{tb_logger.log_dir}/Reconstructions").mkdir(exist_ok=True, parents=True)
 
 
 print(f"======= Training {config['logging_params']['name']} =======")

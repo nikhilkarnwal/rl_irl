@@ -114,7 +114,7 @@ class Policy(nn.Module):
 
         actual_acts, log_prob = self.head(self.policy(obs))
 
-        act_loss = torch.mean(log_prob*adv)
+        act_loss = -torch.mean(log_prob*adv)
         logs['act_loss'] = act_loss.item()
         act_loss.backward()
         self.policy_optim.step()

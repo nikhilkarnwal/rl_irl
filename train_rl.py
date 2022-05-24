@@ -23,12 +23,13 @@ from wandb import wandb
 from wandb.integration.sb3 import WandbCallback
 
 from imitation.algorithms import bc
-from imitation.algorithms.adversarial import airl, gail
+from imitation.algorithms.adversarial import airl, gail, common
 from imitation.data import rollout
 from imitation.util import logger, util
 from stable_baselines3.common.noise import NormalActionNoise
 import stable_baselines3.common.utils as s3utils
 import yaml
+from gauss_mlp import GaussMLP
 from utils import ReplayBufferFHAS, TrajReplayABS, ReplayBufferAS, IRLASWrapper
 import d4rl
 from imitation.data import types
@@ -98,6 +99,7 @@ class IRLCallback:
 
     def add_cllbk(self, curr_inst):
         self.all_inst.append(curr_inst)
+        print("No. of Steps - ", len(self.all_inst))
 
     def step(self,itr):
         for i in range(len(self.all_inst)):
@@ -118,7 +120,7 @@ def linear_schedule(initial_value: float):
         :param progress_remaining:
         :return: current learning rate
         """
-        return progress_remaining * initial_value
+        return max(progress_remaining * initial_value, 1e-5)
 
     return func
 
@@ -183,7 +185,8 @@ def run_gail(name, transitions, args, work_dir):
     if args.gen == 'ppo':
         gen_algo = PPO(env=venv,tensorboard_log=work_dir, **gen_algo_cfg)
     else:
-        lr = linear_schedule(gen_algo_cfg.pop("learning_rate"))
+        # lr = linear_schedule(gen_algo_cfg.pop("learning_rate"))
+        lr = gen_algo_cfg.pop("learning_rate")
         gen_algo = sb3.SAC(
             env=venv,tensorboard_log=work_dir, **gen_algo_cfg, 
             replay_buffer_class=replay_bf_cls, replay_buffer_kwargs=replay_buffer_kwargs,
@@ -212,9 +215,9 @@ def run_gail(name, transitions, args, work_dir):
         for key in reward_net.mlp._modules.keys():
             if isinstance(reward_net.mlp._modules[key],nn.Linear):
                 reward_net.mlp._modules[key] = spectral_norm(reward_net.mlp._modules[key])
-    wandb.watch(reward_net)
-    wandb.run.summary["rew_model"] = reward_net.__repr__
-    wandb.run.summary["policy_model"] = gen_algo.policy.__repr__
+    # wandb.watch(reward_net)
+    # wandb.run.summary["rew_model"] = reward_net.__repr__
+    # wandb.run.summary["policy_model"] = gen_algo.policy.__repr__
     # if not args.reward:
     #     reward_net = None
     # reward_net = None
@@ -252,7 +255,17 @@ def run_gail(name, transitions, args, work_dir):
     def gail_step(self,itr):
         self.demo_batch_size=max(self.demo_batch_size//(itr+1),256)
 
-    gail_trainer.__setattr__("step",gail_step)
+    # gail_trainer.__setattr__("step",gail_step)
+    gail.GAIL.step = gail_step
+
+    def _next_expert_batch_func(self):
+        ep_sample  = next(self._endless_expert_iterator)
+        for key in ep_sample.keys():
+            if key is not "infos" and len(ep_sample[key]) >=self.demo_batch_size:
+                ep_sample[key] = ep_sample[key][:self.demo_batch_size]
+        return ep_sample
+
+    gail.GAIL._next_expert_batch = _next_expert_batch_func
 
     scheduler = th.optim.lr_scheduler.ExponentialLR(gail_trainer._disc_opt, gamma=0.95, verbose=True)
     # scheduler = None
@@ -265,11 +278,11 @@ def run_gail(name, transitions, args, work_dir):
             log_path=work_dir,
             eval_freq=20000
         ))
-    gail_trainer.gen_callback = [*callbks,gail_trainer.gen_callback, WandbCallback(verbose=1,gradient_save_freq=10000)]
+    gail_trainer.gen_callback = [*callbks,gail_trainer.gen_callback]#, WandbCallback(verbose=1,gradient_save_freq=10000)]
     gail_trainer.allow_variable_horizon = True
     gail_callback = IRLCallback()
-    gail_callback.add_cllbk(gail_callback)
     if args.sh:
+        gail_callback.add_cllbk(gail_trainer)
         gail_callback.add_cllbk(scheduler)
     gail_trainer.train(total_timesteps=int(irl_cfg['ts']), callback=gail_callback.step)
     # Train AIRL on expert data.
@@ -320,14 +333,17 @@ class RewardModel(nn.Module):
         if feat.dim() == 1:
             feat = feat.unsqueeze(0)
         feat = feat.to('cuda')
-        x_cons, mu, log_var = self.model(feat)
-        kld_loss = -0.5 * torch.mean(torch.sum(1 + log_var - mu.pow(2) - log_var.exp(),-1))
+        # x_cons, mu, log_var = self.model(feat)
+        log_prob = self.model(feat)
+        kld_loss = self.model.loss_function(feat,log_prob[0])[0]
+        # print(kld_loss)
+        # kld_loss = -0.5 * torch.mean(torch.sum(1 + log_var - mu.pow(2) - log_var.exp(),-1))
         # print(kld_loss)
 
-        kld_loss *= 100000000
+        # kld_loss *= 100000000
         # kld_loss += nn.functional.mse_loss(feat,x_cons)
         # print(kld_loss)
-        reward =  -kld_loss
+        reward =  kld_loss
         # reward = -torch.log(torch.clip(kld_loss,0,10)+1e-5)
         # reward = nn.Tanh()(-kld_loss)
         # reward = torch.exp(torch.clip(-kld_loss,-10,10))
@@ -353,7 +369,7 @@ class VAEEnv(gym.Wrapper):
 
 def load_reward_model(file):
     # model = MLPVAE(in_dim=67, enc_dims=[64,64,32,32,16],  z_dim= 16)
-    model = MLPVAE(in_dim=5, enc_dims=[8,8,4],  z_dim= 4)
+    model = GaussMLP(in_dim=14, enc_dims=[16,8,8],  z_dim= 8)
     # checkpoint = torch.load(file)
     # print(checkpoint.keys())
     # model.load_state_dict(checkpoint['state_dict']['model'])
@@ -690,12 +706,12 @@ def main():
         os.makedirs(work_dir)
         print(f"Creating dir-{work_dir}")
 
-    run = wandb.init(
-        name=f'{name}-{dt_string}', dir=work_dir,
-        project='rl_irl',
-        config=args.__dict__,
-        sync_tensorboard=True,
-        monitor_gym=False)
+    # run = wandb.init(
+    #     name=f'{name}-{dt_string}', dir=work_dir,
+    #     project='rl_irl',
+    #     config=args.__dict__,
+    #     sync_tensorboard=True,
+    #     monitor_gym=False)
 
     print(f"Storing at {work_dir}")
     with open(f'{work_dir}/desc_file.txt', 'w') as fd:
@@ -728,7 +744,7 @@ def main():
     if args.irl:
         run_gail(name, trajs, args, work_dir)
     
-    run.finish()
+    # run.finish()
 
 
 if __name__ == "__main__":
