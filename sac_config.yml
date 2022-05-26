@@ -81,7 +81,7 @@ Gail3:
   demo_batch_size: 20000
   gen_train_timesteps: 20000
   lr: !!float 1e-3
-  ts: !!float 1e6
+  ts: !!float 3e6
   round: 2
 
 # decrease learning rate
@@ -114,7 +114,7 @@ Gail7:
   lr: !!float 1e-3
   ts: !!float 3e6
   round: 2
-  wd: !!float 1
+  wd: !!float 0.01
 
 
 
@@ -192,3 +192,26 @@ door-expert-v1_2:
   gamma: 0.97
   train_freq: 1
   
+door-expert-v1_3:
+  n_envs: 1
+  n_timesteps: !!float 3e6
+  learning_starts: 10000
+  policy: 'MlpPolicy'
+  verbose: 1
+  tau: !!float 0.01
+  buffer_size: 3000000
+  batch_size: 256
+  learning_rate: !!float 3e-4
+  gamma: 0.99
+
+door-expert-v1_4:
+  n_envs: 1
+  n_timesteps: !!float 3e6
+  learning_starts: 10000
+  policy: 'MlpPolicy'
+  verbose: 1
+  tau: !!float 0.01
+  buffer_size: 1000000
+  batch_size: 256
+  learning_rate: !!float 3e-4
+  gamma: 0.99

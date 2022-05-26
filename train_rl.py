@@ -207,8 +207,8 @@ def run_gail(name, transitions, args, work_dir):
     # )
     reward_net = reward_nets.BasicRewardNet(
                 observation_space=venv.observation_space,
-                action_space=venv.action_space,
-                **{"hid_sizes": (64,)}
+                action_space=venv.action_space
+                # ,**{"hid_sizes": (64,)}
             )
     if args.spec_norm:
         print("Running with Spectral Norm")
@@ -282,8 +282,9 @@ def run_gail(name, transitions, args, work_dir):
     gail_trainer.allow_variable_horizon = True
     gail_callback = IRLCallback()
     if args.sh:
-        gail_callback.add_cllbk(gail_trainer)
         gail_callback.add_cllbk(scheduler)
+    if args.demo_sh:
+         gail_callback.add_cllbk(gail_trainer)
     gail_trainer.train(total_timesteps=int(irl_cfg['ts']), callback=gail_callback.step)
     # Train AIRL on expert data.
     # airl_logger = logger.configure(tempdir_path / "AIRL/")
@@ -673,6 +674,7 @@ def main():
     parser.add_argument('--policy_kw', action='store_true', default=False)
     parser.add_argument('--sh', action='store_true', default=False)
     parser.add_argument('--spec_norm', action='store_true', default=False)
+    parser.add_argument('--demo_sh', action='store_true', default=False)
 
     parser.add_argument('--test_model', action='store_true', default=False)
     parser.add_argument('--abs', action='store_true', default=False)
